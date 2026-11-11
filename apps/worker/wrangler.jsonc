@@ -1,0 +1,14 @@
+{
+  // Configuração do Worker. Nesta fase é só o SPIKE (etapa 2): uma sala com
+  // Durable Object + WebSocket para medir se a Cloudflare serve para a Trilha.
+  "name": "abc-game-spike",
+  "main": "src/index.ts",
+  "compatibility_date": "2025-10-01",
+  "durable_objects": {
+    "bindings": [{ "name": "SPIKE_ROOM", "class_name": "SpikeRoom" }]
+  },
+  "migrations": [
+    // O plano Free só aceita Durable Objects com armazenamento SQLite.
+    { "tag": "v1", "new_sqlite_classes": ["SpikeRoom"] }
+  ]
+}

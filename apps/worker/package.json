@@ -5,9 +5,13 @@
   "description": "API e partidas na Cloudflare (Workers, Durable Objects, D1)",
   "type": "module",
   "scripts": {
+    "dev": "wrangler dev",
+    "deploy": "wrangler deploy",
+    "spike": "node scripts/spike.mjs",
     "typecheck": "tsc --noEmit"
   },
   "devDependencies": {
+    "@cloudflare/workers-types": "^5.20261110.1",
     "wrangler": "^4.160.0"
   }
 }
