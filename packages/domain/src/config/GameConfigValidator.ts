@@ -53,6 +53,10 @@ export class GameConfigValidator {
       if (event.value < 1) problems.push(`evento "${event.label}": value deve ser >= 1`);
     }
 
+    if (config.nickname.minLength < 1 || config.nickname.maxLength < config.nickname.minLength) {
+      problems.push("nickname: tamanhos mínimo/máximo incoerentes");
+    }
+
     if (config.questionBank.reducedMinValidatedPerLevel > config.questionBank.minValidatedPerLevel) {
       problems.push("o mínimo reduzido não pode ser maior que o mínimo normal");
     }

@@ -1,10 +1,11 @@
 import type { ListShuffler } from "../random/ListShuffler";
 import { OPTION_KEYS, type OptionKey, type Question } from "./Question";
 import type { PresentedQuestion } from "./PublicQuestion";
+import type { QuestionPresenter } from "./QuestionPresenter";
 
 // Embaralha as alternativas de uma pergunta e prepara o que vai ao celular.
 // Responsabilidade única: montar a versão pública sem vazar o gabarito.
-export class AnswerShuffler {
+export class AnswerShuffler implements QuestionPresenter {
   constructor(private readonly shuffler: ListShuffler) {}
 
   present(question: Question): PresentedQuestion {

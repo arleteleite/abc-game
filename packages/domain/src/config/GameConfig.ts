@@ -39,6 +39,8 @@ export interface TrailConfig {
   /** [P] */
   reconnectToleranceSeconds: number;
   startRaceMaxAttempts: number;
+  /** Nível da pergunta da largada. [P] fácil, para que a largada seja decidida por rapidez. */
+  startRaceDifficulty: Difficulty;
   events: readonly BoardEventConfig[];
 }
 
@@ -46,6 +48,13 @@ export interface RankingConfig {
   topSize: number;
   /** [P] */
   pollingSeconds: number;
+}
+
+export interface NicknameConfig {
+  minLength: number;
+  maxLength: number;
+  /** Termos bloqueados (sem acento e em minúsculas). [P] lista a ser fornecida pela responsável. */
+  blockedTerms: readonly string[];
 }
 
 export interface QuestionBankConfig {
@@ -58,6 +67,7 @@ export interface GameConfig {
   trail: TrailConfig;
   ranking: RankingConfig;
   questionBank: QuestionBankConfig;
+  nickname: NicknameConfig;
 }
 
 export const DEFAULT_GAME_CONFIG: GameConfig = {
@@ -75,6 +85,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     invitationSeconds: 180,
     reconnectToleranceSeconds: 30,
     startRaceMaxAttempts: 3,
+    startRaceDifficulty: "facil",
     events: [
       { square: 3, kind: "stop", value: 1, label: "Veranico" },
       { square: 5, kind: "advance", value: 2, label: "Assistência técnica" },
@@ -84,4 +95,5 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   },
   ranking: { topSize: 5, pollingSeconds: 15 },
   questionBank: { minValidatedPerLevel: 30, reducedMinValidatedPerLevel: 20 },
+  nickname: { minLength: 2, maxLength: 16, blockedTerms: [] },
 };

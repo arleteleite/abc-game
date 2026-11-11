@@ -11,6 +11,7 @@ export type {
   BoardEventConfig,
   BoardEventKind,
   GameConfig,
+  NicknameConfig,
   QuestionBankConfig,
   QuizConfig,
   RankingConfig,
@@ -37,3 +38,33 @@ export { BoardEventFactory } from "./board/BoardEventFactory";
 export { Board } from "./board/Board";
 export type { MoveResult } from "./board/MoveResult";
 export { PAWNS, PlayerPiece, type Pawn } from "./board/PlayerPiece";
+
+// Etapa 4: partida, jogadores, convites, tempo
+export { fail, ok, type Result } from "./common/Result";
+export type { Clock } from "./time/Clock";
+export { SystemClock } from "./time/SystemClock";
+export { FakeClock } from "./time/FakeClock";
+export type { IdGenerator } from "./ids/IdGenerator";
+export { SequentialIdGenerator } from "./ids/SequentialIdGenerator";
+export type { Player } from "./players/Player";
+export { NicknameValidator, type NicknameProblem, type ValidNickname } from "./players/NicknameValidator";
+export { PlayerRegistry, type JoinProblem } from "./players/PlayerRegistry";
+export { Invitation, type InvitationProblem, type InvitationState } from "./invitations/Invitation";
+export type { QuestionDealer } from "./questions/QuestionDealer";
+export type { QuestionPresenter } from "./questions/QuestionPresenter";
+export { StartRace, type RaceAnswer, type RaceDecision, type RaceStatus } from "./match/StartRace";
+export { TurnManager, type AnswerRejection } from "./match/TurnManager";
+export { DisconnectPolicy, type ConnectionStatus } from "./match/DisconnectPolicy";
+export { Match, type MatchDependencies } from "./match/Match";
+export type {
+  AnswerOutcome,
+  EndReason,
+  MatchPhase,
+  MatchRejection,
+  MatchResult,
+  MatchSnapshot,
+  RaceOutcome,
+  RacePrompt,
+  TickResult,
+  TurnPrompt,
+} from "./match/MatchTypes";
