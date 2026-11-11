@@ -1,0 +1,21 @@
+{
+  "name": "abc-game",
+  "private": true,
+  "version": "0.0.0",
+  "description": "ABC+ GAME: Quiz ABC+ e Trilha ABC+",
+  "type": "module",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "engines": {
+    "node": ">=20"
+  },
+  "scripts": {
+    "test": "npm run test --workspaces --if-present",
+    "typecheck": "npm run typecheck --workspaces --if-present"
+  },
+  "devDependencies": {
+    "typescript": "^5.6.0"
+  }
+}

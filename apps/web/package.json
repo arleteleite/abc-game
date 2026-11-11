@@ -1,0 +1,10 @@
+{
+  "name": "@abc-game/web",
+  "private": true,
+  "version": "0.0.0",
+  "description": "Interface React dos jogos (celular e telão)",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  }
+}

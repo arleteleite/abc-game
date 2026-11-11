@@ -1,0 +1,13 @@
+{
+  "name": "@abc-game/worker",
+  "private": true,
+  "version": "0.0.0",
+  "description": "API e partidas na Cloudflare (Workers, Durable Objects, D1)",
+  "type": "module",
+  "scripts": {
+    "typecheck": "tsc --noEmit"
+  },
+  "devDependencies": {
+    "wrangler": "^4.160.0"
+  }
+}

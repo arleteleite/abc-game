@@ -1,0 +1,20 @@
+# dependências e builds
+node_modules/
+dist/
+coverage/
+*.tsbuildinfo
+
+# Cloudflare (local e segredos)
+.wrangler/
+.dev.vars
+.env
+.env.*
+
+# sistema e editor
+.DS_Store
+Thumbs.db
+.vscode/
+.idea/
+
+# configuração local do Claude Code
+.claude/settings.local.json
