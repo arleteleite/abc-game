@@ -49,6 +49,7 @@ check("apelido repetido é recusado", (await api("/api/join", { method: "POST", 
 check("sem token não acessa o saguão", (await api("/api/lobby")).status === 401);
 check("rota interna não é alcançável pela internet", [401, 404].includes((await api("/api/internal/match-ended", { method: "POST", body: { matchId: "x" } })).status));
 
+await api("/api/lobby", { token: B.token }); // B chega ao saguão (passa a aparecer na lista)
 const lobbyA = await api("/api/lobby", { token: A.token });
 check("a lista de disponíveis mostra o outro jogador, sem tokens", lobbyA.data.available.some((p) => p.id === B.id) && !JSON.stringify(lobbyA.data).includes(B.token));
 

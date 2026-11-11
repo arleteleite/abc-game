@@ -53,7 +53,8 @@ export interface LobbySnapshot {
 // O "saguão": quem está online, quem está livre, e os convites entre jogadores.
 // Não sabe de rede nem de armazenamento (o Worker guarda o que for preciso).
 export class Lobby {
-  private readonly lastSeen = new Map<string, number>();
+  private readonly lastSeen = new Map<string, number>(); // qualquer sinal de vida (mantém a sessão)
+  private readonly lastInLobby = new Map<string, number>(); // última consulta ao saguão (aparece na lista)
   private readonly inMatch = new Map<string, string>(); // playerId -> matchId
   private readonly matchStartedAt = new Map<string, number>(); // matchId -> início
   private readonly invitations = new Map<string, Invitation>();
@@ -110,6 +111,7 @@ export class Lobby {
     }
     this.inMatch.delete(playerId);
     this.lastSeen.delete(playerId);
+    this.lastInLobby.delete(playerId);
     this.registry.leave(playerId);
   }
 
@@ -142,10 +144,17 @@ export class Lobby {
 
   // ---------- consulta ----------
 
+  /** Sinal de vida sem fazer mais nada (usado pelo menu e pelo Quiz). */
+  heartbeat(playerId: string): void {
+    if (this.registry.isActive(playerId)) this.lastSeen.set(playerId, this.clock.now());
+  }
+
   view(playerId: string): LobbyView {
+    // Quem consulta o saguão está nele: aparece para os outros por um tempo curto.
+    this.lastInLobby.set(playerId, this.clock.now());
     const available = this.registry
       .list()
-      .filter((p) => p.id !== playerId && !this.inMatch.has(p.id) && this.isPresent(p.id));
+      .filter((p) => p.id !== playerId && !this.inMatch.has(p.id) && this.isVisible(p.id));
 
     const incoming: InvitationView[] = [];
     let outgoing: InvitationView | null = null;
@@ -183,7 +192,7 @@ export class Lobby {
     if (fromId === toId) return fail("self_invite");
     if (this.inMatch.has(fromId)) return fail("player_busy");
     const to = this.registry.get(toId);
-    if (!to || this.inMatch.has(toId) || !this.isPresent(toId)) return fail("target_unavailable");
+    if (!to || this.inMatch.has(toId) || !this.isVisible(toId)) return fail("target_unavailable");
 
     this.cancelOpenInvitationsFrom(fromId);
     const invitation = new Invitation(this.ids.next(), fromId, pawn, toId, this.clock, this.invitationSeconds);
@@ -250,9 +259,10 @@ export class Lobby {
 
   // ---------- internos ----------
 
-  private isPresent(playerId: string): boolean {
-    const seen = this.lastSeen.get(playerId);
-    return seen !== undefined && this.clock.now() - seen < this.config.presenceTimeoutSeconds * 1000;
+  /** Está no saguão agora: consultou a lista há pouco e não está jogando. */
+  private isVisible(playerId: string): boolean {
+    const seen = this.lastInLobby.get(playerId);
+    return seen !== undefined && this.clock.now() - seen < this.config.visibleSeconds * 1000;
   }
 
   private cancelOpenInvitationsFrom(playerId: string): void {

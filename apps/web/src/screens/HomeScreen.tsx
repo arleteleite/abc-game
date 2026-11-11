@@ -64,9 +64,9 @@ export function HomeScreen({ api, onJoined }: Props) {
           <h2>Trilha ABC+</h2>
           <p>Disputa em dupla: desafie outro jogador e corra até a casa 15.</p>
         </div>
-        <div className="game-card disabled" aria-disabled="true">
+        <div className="game-card active">
           <h2>Quiz ABC+</h2>
-          <p>Em breve.</p>
+          <p>Jogo solo: 10 perguntas, 15 segundos cada, com ranking.</p>
         </div>
       </div>
     </main>

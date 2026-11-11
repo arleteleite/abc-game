@@ -75,3 +75,18 @@ export { Lobby, type LobbySnapshot, type InvitationView, type InviteProblem, typ
 export type { TrailRecord } from "./results/TrailRecord";
 export type { TrailResultRepository } from "./results/TrailResultRepository";
 export { InMemoryTrailResultRepository } from "./results/InMemoryTrailResultRepository";
+
+// Etapa 7: Quiz
+export { QuizSession, type QuizRejection } from "./quiz/QuizSession";
+export type {
+  QuizAnswerOutcome,
+  QuizAnswerRecord,
+  QuizItem,
+  QuizPrompt,
+  QuizSnapshot,
+  QuizSummary,
+} from "./quiz/QuizTypes";
+export { QuizRanking, type QuizStanding } from "./quiz/QuizRanking";
+export type { QuizRecord } from "./results/QuizRecord";
+export type { QuizResultRepository } from "./results/QuizResultRepository";
+export { InMemoryQuizResultRepository } from "./results/InMemoryQuizResultRepository";

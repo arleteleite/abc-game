@@ -13,12 +13,13 @@ interface Props {
   api: ApiClient;
   session: Session;
   onMatch: (matchId: string) => void;
+  onMenu: () => void;
   onLeave: () => void;
   onSessionLost: () => void;
 }
 
 // Saguão da Trilha: escolher o peão, ver quem está disponível, convidar e responder convites.
-export function LobbyScreen({ api, session, onMatch, onLeave, onSessionLost }: Props) {
+export function LobbyScreen({ api, session, onMatch, onMenu, onLeave, onSessionLost }: Props) {
   const { view, error: pollError, refresh } = useLobby(api, onSessionLost);
   const [pawn, setPawn] = useState<Pawn | null>(null);
   const [notice, setNotice] = useState<string | null>(null);
@@ -76,15 +77,20 @@ export function LobbyScreen({ api, session, onMatch, onLeave, onSessionLost }: P
         <span>
           Olá, <strong>{session.player.nickname}</strong>
         </span>
-        <button
-          className="button small"
-          onClick={() => {
-            void api.leave().catch(() => undefined);
-            onLeave();
-          }}
-        >
-          Sair
-        </button>
+        <div className="row">
+          <button className="button small" onClick={onMenu}>
+            Menu
+          </button>
+          <button
+            className="button small"
+            onClick={() => {
+              void api.leave().catch(() => undefined);
+              onLeave();
+            }}
+          >
+            Sair
+          </button>
+        </div>
       </header>
 
       {(actionError || pollError) && (

@@ -446,3 +446,49 @@ h2 {
 .result {
   padding: 24px 16px;
 }
+
+/* ---------- menu e Quiz ---------- */
+.game-button {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  text-align: left;
+  font: inherit;
+  min-height: 96px;
+  padding: 16px;
+  border: 0;
+  border-left: 10px solid var(--green);
+  border-radius: var(--radius);
+  background: var(--white);
+  color: var(--ink);
+  cursor: pointer;
+  box-shadow: 0 1px 0 #0001;
+}
+.game-button strong {
+  font-size: 1.3rem;
+  color: var(--green-dark);
+}
+.game-button:focus-visible {
+  outline: 3px solid var(--aqua);
+  outline-offset: 2px;
+}
+.big-number {
+  margin: 0;
+  font-size: 3rem;
+  font-weight: 800;
+  color: var(--green-dark);
+}
+.center-row {
+  justify-content: center;
+}
+.position {
+  background: #e7f1fb;
+  border-radius: 10px;
+  padding: 10px 12px;
+}
+
+/* o ícone ✔/✖ fica na mesma linha do texto do aviso */
+.banner > [aria-hidden="true"] {
+  float: left;
+  margin-right: 6px;
+}

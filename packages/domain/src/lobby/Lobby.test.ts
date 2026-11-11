@@ -18,6 +18,7 @@ function setup() {
   const join = (nick: string) => {
     const r = lobby.join(nick);
     if (!r.ok) throw new Error(`join falhou: ${r.reason}`);
+    lobby.view(r.value.player.id); // chegou ao saguão: passa a aparecer na lista
     return r.value;
   };
   return { clock, lobby, join };
@@ -33,15 +34,36 @@ describe("Lobby: lista de disponíveis", () => {
     expect(JSON.stringify(view)).not.toContain("tok");
   });
 
-  it("quem fica sem sinal de vida sai da lista; heartbeat mantém na lista", () => {
+  it("quem para de consultar o saguão some da lista; quem consulta continua", () => {
     const { lobby, join, clock } = setup();
     const ana = join("Ana");
     const beto = join("Beto");
-    clock.advance(30_000);
-    lobby.authenticate(beto.token); // Beto dá sinal
-    clock.advance(20_000); // Ana: 50 s sem sinal; Beto: 20 s
-    expect(lobby.view(beto.player.id).available).toEqual([]);
+    clock.advance(10_000);
+    lobby.view(beto.player.id); // Beto continua no saguão
+    clock.advance(10_000); // Ana: 20 s sem consultar; Beto: 10 s
+    expect(lobby.view(beto.player.id).available).toEqual([]); // Ana sumiu da lista
+    expect(lobby.view(ana.player.id).available.map((p) => p.nickname)).toEqual(["Beto"]);
+  });
+
+  it("jogador no Quiz (sem consultar o saguão) não recebe convite", () => {
+    const { lobby, join, clock } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    clock.advance(20_000);
+    lobby.heartbeat(beto.player.id); // Beto está vivo, mas fora do saguão
+    lobby.view(ana.player.id);
+    expect(lobby.invite(ana.player.id, beto.player.id, "vaca")).toEqual({ ok: false, reason: "target_unavailable" });
+  });
+
+  it("a sessão só acaba depois de 120 s sem nenhum sinal; heartbeat renova", () => {
+    const { lobby, join, clock } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    clock.advance(100_000);
+    lobby.heartbeat(beto.player.id);
+    clock.advance(30_000); // Ana: 130 s sem sinal; Beto: 30 s
     expect(lobby.sweep()).toEqual([ana.player.id]);
+    expect(lobby.authenticate(beto.token)).toBeDefined();
     expect(lobby.authenticate(ana.token)).toBeUndefined();
   });
 });

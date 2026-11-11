@@ -51,8 +51,10 @@ export interface RankingConfig {
 }
 
 export interface LobbyConfig {
-  /** Sem sinal de vida por este tempo, o jogador sai da lista de disponíveis. [P] */
+  /** Sem nenhum sinal de vida por este tempo, a sessão do jogador acaba e o apelido é liberado. [P] */
   presenceTimeoutSeconds: number;
+  /** Quanto tempo depois da última consulta ao saguão o jogador ainda aparece na lista de disponíveis. [P] */
+  visibleSeconds: number;
   /** Intervalo entre consultas do saguão (lista e convites). [P] 5 s: convite precisa de resposta rápida. */
   pollSeconds: number;
   /** Segurança: partida que não avisou o fim em tanto tempo libera os jogadores. [P] */
@@ -106,5 +108,5 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   ranking: { topSize: 5, pollingSeconds: 15 },
   questionBank: { minValidatedPerLevel: 30, reducedMinValidatedPerLevel: 20 },
   nickname: { minLength: 2, maxLength: 16, blockedTerms: [] },
-  lobby: { presenceTimeoutSeconds: 45, pollSeconds: 5, matchMaxSeconds: 900 },
+  lobby: { presenceTimeoutSeconds: 120, visibleSeconds: 15, pollSeconds: 5, matchMaxSeconds: 900 },
 };

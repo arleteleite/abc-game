@@ -1,5 +1,12 @@
 import type { Pawn } from "@abc-game/domain";
-import type { JoinResponse, LobbyResponse, MatchCreatedResponse } from "@abc-game/protocol";
+import type {
+  JoinResponse,
+  LobbyResponse,
+  MatchCreatedResponse,
+  QuizAnswerRequest,
+  QuizAnswerResponse,
+  QuizStartResponse,
+} from "@abc-game/protocol";
 
 // Erro devolvido pelo servidor: `code` é o motivo (ex.: "nickname_in_use").
 export class ApiError extends Error {
@@ -38,6 +45,18 @@ export class ApiClient {
 
   cancel(invitationId: string): Promise<unknown> {
     return this.request("POST", `/api/invitations/${invitationId}/cancel`);
+  }
+
+  heartbeat(): Promise<unknown> {
+    return this.request("POST", "/api/heartbeat");
+  }
+
+  quizStart(): Promise<QuizStartResponse> {
+    return this.request("POST", "/api/quiz/start", {});
+  }
+
+  quizAnswer(body: QuizAnswerRequest): Promise<QuizAnswerResponse> {
+    return this.request("POST", "/api/quiz/answer", body);
   }
 
   leave(): Promise<unknown> {

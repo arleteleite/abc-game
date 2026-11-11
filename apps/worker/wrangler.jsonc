@@ -6,12 +6,14 @@
   "durable_objects": {
     "bindings": [
       { "name": "LOBBY", "class_name": "LobbyObject" },
-      { "name": "MATCH", "class_name": "MatchObject" }
+      { "name": "MATCH", "class_name": "MatchObject" },
+      { "name": "QUIZ", "class_name": "QuizObject" }
     ]
   },
   "migrations": [
     // O plano Free só aceita Durable Objects com armazenamento SQLite.
-    { "tag": "v1", "new_sqlite_classes": ["LobbyObject", "MatchObject"] }
+    { "tag": "v1", "new_sqlite_classes": ["LobbyObject", "MatchObject"] },
+    { "tag": "v2", "new_sqlite_classes": ["QuizObject"] }
   ],
   // Serve o site (apps/web/dist) pelo mesmo endereço da API: sem CORS e sem cobrar requisição
   // por arquivo estático. Só /api/* passa pelo código do Worker.

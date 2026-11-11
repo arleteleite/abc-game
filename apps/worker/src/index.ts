@@ -2,9 +2,10 @@ import type { Env } from "./env";
 import { errorResponse } from "./http/json";
 import { LobbyObject } from "./LobbyObject";
 import { MatchObject } from "./MatchObject";
+import { QuizObject } from "./QuizObject";
 
 // O Worker só encaminha: nada de regra de jogo aqui.
-export { LobbyObject, MatchObject };
+export { LobbyObject, MatchObject, QuizObject };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
@@ -15,6 +16,20 @@ export default {
     if (ws) {
       const matchId = ws[1] as string;
       return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
+    }
+
+    // Quiz: o roteador confere o token no saguão e entrega o jogador ao Quiz dele.
+    const quiz = /^\/api\/quiz\/(start|answer)$/.exec(url.pathname);
+    if (quiz && request.method === "POST") {
+      const who = await env.LOBBY.get(env.LOBBY.idFromName("main")).fetch("https://lobby/internal/whoami", {
+        method: "POST",
+        headers: { authorization: request.headers.get("authorization") ?? "" },
+      });
+      if (!who.ok) return errorResponse("unauthorized", 401);
+      const player = (await who.json()) as { id: string; nickname: string };
+      const headers = new Headers({ "x-player-id": player.id, "x-player-nickname": player.nickname });
+      const body = await request.text();
+      return env.QUIZ.get(env.QUIZ.idFromName(player.id)).fetch(`https://quiz/${quiz[1]}`, { method: "POST", headers, body });
     }
 
     // Saguão (entrar, lista, convites). A rota interna não passa por aqui.

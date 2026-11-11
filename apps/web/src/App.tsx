@@ -3,9 +3,17 @@ import { ApiClient } from "./api/ApiClient";
 import { HomeScreen } from "./screens/HomeScreen";
 import { LobbyScreen } from "./screens/LobbyScreen";
 import { MatchScreen } from "./screens/MatchScreen";
+import { MenuScreen } from "./screens/MenuScreen";
+import { QuizScreen } from "./screens/QuizScreen";
 import { SessionStore, type Session } from "./session/SessionStore";
 
-type Screen = { name: "loading" } | { name: "home" } | { name: "lobby" } | { name: "match"; matchId: string };
+type Screen =
+  | { name: "loading" }
+  | { name: "home" }
+  | { name: "menu" }
+  | { name: "quiz" }
+  | { name: "lobby" }
+  | { name: "match"; matchId: string };
 
 // Sem biblioteca de rotas: a tela atual é só um valor guardado em estado.
 export function App() {
@@ -27,11 +35,12 @@ export function App() {
     if (screen.name !== "loading") return;
     api
       .lobby()
-      .then((view) => setScreen(view.matchId ? { name: "match", matchId: view.matchId } : { name: "lobby" }))
+      .then((view) => setScreen(view.matchId ? { name: "match", matchId: view.matchId } : { name: "menu" }))
       .catch(dropSession);
   }, [screen.name, api, dropSession]);
 
   const goMatch = useCallback((matchId: string) => setScreen({ name: "match", matchId }), []);
+  const goMenu = useCallback(() => setScreen({ name: "menu" }), []);
 
   if (screen.name === "loading") return <main className="screen"><p className="hint center">Carregando…</p></main>;
 
@@ -43,15 +52,29 @@ export function App() {
           SessionStore.save(joined);
           tokenRef.current = joined.token;
           setSession(joined);
-          setScreen({ name: "lobby" });
+          setScreen({ name: "menu" });
         }}
       />
     );
   }
 
-  if (screen.name === "match") {
-    return <MatchScreen matchId={screen.matchId} token={session.token} onExit={() => setScreen({ name: "lobby" })} />;
+  switch (screen.name) {
+    case "menu":
+      return (
+        <MenuScreen
+          api={api}
+          session={session}
+          onTrail={() => setScreen({ name: "lobby" })}
+          onQuiz={() => setScreen({ name: "quiz" })}
+          onLeave={dropSession}
+          onSessionLost={dropSession}
+        />
+      );
+    case "quiz":
+      return <QuizScreen api={api} onExit={goMenu} onSessionLost={dropSession} />;
+    case "match":
+      return <MatchScreen matchId={screen.matchId} token={session.token} onExit={() => setScreen({ name: "lobby" })} />;
+    case "lobby":
+      return <LobbyScreen api={api} session={session} onMatch={goMatch} onMenu={goMenu} onLeave={dropSession} onSessionLost={dropSession} />;
   }
-
-  return <LobbyScreen api={api} session={session} onMatch={goMatch} onLeave={dropSession} onSessionLost={dropSession} />;
 }

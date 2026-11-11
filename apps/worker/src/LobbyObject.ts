@@ -56,6 +56,13 @@ export class LobbyObject extends DurableObject<Env> {
       return this.matchEnded(request);
     }
 
+    // Rota interna usada pelo roteador do Quiz: confere o token e diz quem é o jogador.
+    if (method === "POST" && path === "/internal/whoami" && !url.pathname.startsWith("/api")) {
+      const who = bearerToken(request);
+      const found = who ? this.lobby.authenticate(who) : undefined;
+      return found ? json({ id: found.id, nickname: found.nickname }) : errorResponse("unauthorized", 401);
+    }
+
     // Daqui em diante, o jogador precisa estar identificado pelo token.
     const token = bearerToken(request);
     const player = token ? this.lobby.authenticate(token) : undefined;
@@ -63,6 +70,8 @@ export class LobbyObject extends DurableObject<Env> {
 
     if (method === "GET" && path === "/lobby") return this.view(player);
     if (method === "POST" && path === "/leave") return this.leave(player);
+    // Sinal de vida (menu e Quiz): authenticate já renovou a sessão.
+    if (method === "POST" && path === "/heartbeat") return json({ ok: true });
     if (method === "POST" && path === "/invitations") return this.invite(request, player);
 
     const action = /^\/invitations\/([\w-]{1,64})\/(accept|decline|cancel)$/.exec(path);

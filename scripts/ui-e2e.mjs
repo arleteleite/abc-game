@@ -54,8 +54,10 @@ await a.getByRole("button", { name: "Entrar" }).click();
 await b.goto(base);
 await b.getByPlaceholder("Seu apelido").fill(nickB);
 await b.getByRole("button", { name: "Entrar" }).click();
+await a.locator(".game-button", { hasText: "Trilha ABC+" }).click();
+await b.locator(".game-button", { hasText: "Trilha ABC+" }).click();
 await a.getByText("2. Quem está disponível").waitFor();
-check("os dois entram pelo apelido e chegam ao saguão", true);
+check("os dois entram pelo apelido, escolhem a Trilha e chegam ao saguão", true);
 
 // 2) Convidar
 await a.getByRole("radio", { name: /Vaca/ }).click();
