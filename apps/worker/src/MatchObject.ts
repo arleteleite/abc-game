@@ -7,6 +7,7 @@ import {
   MathRandom,
   Match,
   PlayerPiece,
+  RematchOffer,
   QuestionSelector,
   SystemClock,
   TrailLevelPicker,
@@ -42,6 +43,7 @@ export class MatchObject extends DurableObject<Env> {
   private lastRacePrompt: RacePrompt | null = null;
   private lastTurnPrompt: TurnPrompt | null = null;
   private endHandled = false;
+  private offer: RematchOffer | null = null;
 
   override async fetch(request: Request): Promise<Response> {
     const url = new URL(request.url);
@@ -75,6 +77,7 @@ export class MatchObject extends DurableObject<Env> {
         presenter: new AnswerShuffler(shuffler),
         random,
         clock: this.clock,
+        ...(body.isRematch ? { isRematch: true } : {}),
       });
       // Os dois ainda não conectaram: quem não aparecer dentro da tolerância é abandono.
       for (const p of this.players) this.match.playerDisconnected(p.playerId);
@@ -131,6 +134,7 @@ export class MatchObject extends DurableObject<Env> {
 
     if (match.phase === "finished") {
       this.sendEnd(me.playerId);
+      this.sendTo(me.playerId, this.rematchMessage());
       return;
     }
     const bothHere = this.sockets.size === 2;
@@ -170,6 +174,22 @@ export class MatchObject extends DurableObject<Env> {
         match.leave(playerId);
         this.afterChange();
         return;
+      case "rematch_request":
+      case "rematch_decline": {
+        if (!this.offer || match.phase !== "finished") {
+          this.sendTo(playerId, { type: "error", reason: "rematch_unavailable" });
+          return;
+        }
+        const res = message.type === "rematch_request" ? this.offer.request(playerId) : this.offer.decline(playerId);
+        if (!res.ok) {
+          this.sendTo(playerId, { type: "error", reason: `rematch_${res.reason}` });
+          return;
+        }
+        this.broadcast(() => this.rematchMessage());
+        if (res.value.state === "agreed") this.ctx.waitUntil(this.launchRematch());
+        else this.stopTimerIfOfferClosed();
+        return;
+      }
       case "race_answer": {
         const res = match.submitRaceAnswer(playerId, message.questionId, message.choice);
         if (!res.ok) this.sendTo(playerId, { type: "error", reason: res.reason });
@@ -191,7 +211,16 @@ export class MatchObject extends DurableObject<Env> {
     if (this.sockets.get(playerId) !== socket) return; // já foi substituída por reconexão
     this.sockets.delete(playerId);
     const match = this.match;
-    if (!match || match.phase === "finished") return;
+    if (match?.phase === "finished") {
+      // Quem sai da tela de resultado desfaz a oferta de revanche (o outro é avisado).
+      if (this.offer && ["idle", "pending"].includes(this.offer.status().state)) {
+        this.offer.cancel();
+        this.broadcast(() => this.rematchMessage());
+        this.stopTimerIfOfferClosed();
+      }
+      return;
+    }
+    if (!match) return;
     match.playerDisconnected(playerId);
     this.sendTo(this.opponentOf(playerId).playerId, {
       type: "opponent_status",
@@ -205,6 +234,12 @@ export class MatchObject extends DurableObject<Env> {
   private onTick(): void {
     const match = this.match;
     if (!match) return;
+    if (match.phase === "finished") {
+      // Só resta vigiar o prazo da revanche.
+      if (this.offer && this.offer.status().state === "expired") this.broadcast(() => this.rematchMessage());
+      this.stopTimerIfOfferClosed();
+      return;
+    }
     const tick: TickResult | null = match.tick();
     if (tick?.kind === "race_expired") this.applyRaceOutcome(null, tick.outcome);
     if (tick?.kind === "turn_expired") this.applyAnswerOutcome(tick.outcome);
@@ -264,10 +299,66 @@ export class MatchObject extends DurableObject<Env> {
     const match = this.match;
     if (!match || match.phase !== "finished" || this.endHandled) return;
     this.endHandled = true;
+    const result = match.result as MatchResult;
+    // Revanche só faz sentido se os dois ainda estão por aqui: abandono não tem revanche.
+    if (result.endReason !== "abandoned") {
+      const [first, second] = this.players as [MatchInitPlayer, MatchInitPlayer];
+      this.offer = new RematchOffer([first.playerId, second.playerId], this.clock, config.invitationSeconds);
+    } else {
+      this.stopTimer();
+    }
+    for (const p of this.players) {
+      this.sendEnd(p.playerId);
+      this.sendTo(p.playerId, this.rematchMessage());
+    }
+    this.ctx.waitUntil(this.finalize(result));
+  }
+
+  // ---------- revanche ----------
+
+  private rematchMessage(): ServerMessage {
+    if (!this.offer) return { type: "rematch_status", state: "unavailable", requestedBy: null, expiresInMs: null };
+    const status = this.offer.status();
+    return {
+      type: "rematch_status",
+      state: status.state,
+      requestedBy: status.requestedBy,
+      expiresInMs: status.expiresAt === null ? null : Math.max(0, status.expiresAt - this.clock.now()),
+    };
+  }
+
+  /** Os dois aceitaram: o saguão cria a partida nova (mesmos jogadores e peões) e avisa o caminho. */
+  private async launchRematch(): Promise<void> {
+    this.stopTimer();
+    try {
+      const [first, second] = this.players as [MatchInitPlayer, MatchInitPlayer];
+      const lobby = this.env.LOBBY.get(this.env.LOBBY.idFromName("main"));
+      const response = await lobby.fetch("https://lobby/internal/rematch", {
+        method: "POST",
+        body: JSON.stringify({
+          first: { playerId: first.playerId, pawn: first.pawn },
+          second: { playerId: second.playerId, pawn: second.pawn },
+          previousMatchId: this.matchId,
+        }),
+      });
+      if (!response.ok) throw new Error(String(response.status));
+      const { matchId } = (await response.json()) as { matchId: string };
+      this.broadcast(() => ({ type: "rematch_started", matchId }));
+    } catch {
+      // Um dos dois já entrou em outra partida, ou a partida não pôde ser criada.
+      this.broadcast(() => ({ type: "rematch_status", state: "unavailable", requestedBy: null, expiresInMs: null }));
+    }
+  }
+
+  private stopTimer(): void {
     if (this.timer) clearInterval(this.timer);
     this.timer = null;
-    for (const p of this.players) this.sendEnd(p.playerId);
-    this.ctx.waitUntil(this.finalize(match.result as MatchResult));
+  }
+
+  /** O relógio de 1 s só continua enquanto a oferta de revanche pode expirar. */
+  private stopTimerIfOfferClosed(): void {
+    const state = this.offer?.status().state;
+    if (!this.offer || (state !== "idle" && state !== "pending")) this.stopTimer();
   }
 
   private async finalize(result: MatchResult): Promise<void> {

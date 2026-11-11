@@ -1,5 +1,6 @@
 import type { PlayerInfo } from "@abc-game/protocol";
-import { useMemo } from "react";
+import type { ReactNode } from "react";
+import { useEffect, useMemo } from "react";
 import { BoardView } from "../components/BoardView";
 import { Countdown } from "../components/Countdown";
 import { PawnImage } from "../components/PawnImage";
@@ -11,12 +12,19 @@ interface Props {
   matchId: string;
   token: string;
   onExit: () => void;
+  /** Revanche combinada pelos dois: ir para a partida nova. */
+  onRematch: (matchId: string) => void;
 }
 
 const ANSWER_MS = 12_000; // só para a barra; o servidor é quem decide o estouro
 
-export function MatchScreen({ matchId, token, onExit }: Props) {
-  const { state, answer, leave } = useMatch(matchId, token);
+export function MatchScreen({ matchId, token, onExit, onRematch }: Props) {
+  const { state, answer, leave, requestRematch, declineRematch } = useMatch(matchId, token);
+
+  // Os dois aceitaram a revanche: segue para a partida nova.
+  useEffect(() => {
+    if (state.nextMatchId) onRematch(state.nextMatchId);
+  }, [state.nextMatchId, onRematch]);
 
   const confirmLeave = () => {
     if (window.confirm("Sair da partida? Ela termina sem vencedor.")) {
@@ -81,7 +89,9 @@ export function MatchScreen({ matchId, token, onExit }: Props) {
         </>
       )}
 
-      {state.phase === "ended" && <ResultCard state={state} onExit={onExit} />}
+      {state.phase === "ended" && (
+        <ResultCard state={state} onExit={onExit} onRequestRematch={requestRematch} onDeclineRematch={declineRematch} />
+      )}
     </main>
   );
 }
@@ -150,7 +160,17 @@ function FeedbackBanner({ feedback, state }: { feedback: Feedback | null; state:
   );
 }
 
-function ResultCard({ state, onExit }: { state: MatchViewState; onExit: () => void }) {
+function ResultCard({
+  state,
+  onExit,
+  onRequestRematch,
+  onDeclineRematch,
+}: {
+  state: MatchViewState;
+  onExit: () => void;
+  onRequestRematch: () => void;
+  onDeclineRematch: () => void;
+}) {
   const ended = state.ended;
   if (!ended) return null;
   const iWon = ended.winnerId !== null && ended.winnerId === state.you?.id;
@@ -159,19 +179,70 @@ function ResultCard({ state, onExit }: { state: MatchViewState; onExit: () => vo
   let detail = "";
   if (ended.endReason === "winner") {
     title = iWon ? "Você venceu! 🏆" : `${ended.winnerNickname ?? "O adversário"} venceu`;
-    detail = ended.rankable ? "A partida vale para o ranking." : "Esta partida não entra no ranking.";
+    detail = ended.rankable ? "A partida vale para o ranking." : "Esta partida (revanche) não entra no ranking.";
   } else if (ended.endReason === "abandoned") {
     detail = "Alguém saiu ou perdeu a conexão. A partida terminou sem vencedor e fica fora do ranking.";
   } else if (ended.endReason === "time_limit") {
     detail = "O tempo máximo da partida acabou. Sem vencedor e fora do ranking.";
   }
 
+  const opponentName = state.opponent?.nickname ?? "o adversário";
+  const rematch = state.rematch;
+  const iRequested = rematch?.requestedBy !== null && rematch?.requestedBy === state.you?.id;
+  const opponentRequested = rematch?.requestedBy !== null && rematch?.requestedBy === state.opponent?.id;
+
+  let rematchArea: ReactNode = null;
+  if (ended.endReason !== "abandoned" && rematch) {
+    switch (rematch.state) {
+      case "idle":
+        rematchArea = (
+          <button className="button primary" onClick={onRequestRematch}>
+            Revanche com {opponentName}
+          </button>
+        );
+        break;
+      case "pending":
+        rematchArea = iRequested ? (
+          <>
+            <p className="notice" role="status">Pedido enviado. Aguardando {opponentName} aceitar (vale por 3 minutos)…</p>
+            <button className="button" onClick={onDeclineRematch}>Desistir da revanche</button>
+          </>
+        ) : opponentRequested ? (
+          <>
+            <p className="notice" role="status">{opponentName} quer a revanche!</p>
+            <div className="row center-row">
+              <button className="button primary" onClick={onRequestRematch}>Aceitar revanche</button>
+              <button className="button" onClick={onDeclineRematch}>Recusar</button>
+            </div>
+          </>
+        ) : null;
+        break;
+      case "agreed":
+        rematchArea = <p className="notice" role="status">Revanche combinada! Entrando na partida…</p>;
+        break;
+      case "declined":
+        rematchArea = <p className="notice" role="status">A revanche foi recusada.</p>;
+        break;
+      case "expired":
+        rematchArea = <p className="notice" role="status">O pedido de revanche expirou.</p>;
+        break;
+      case "cancelled":
+        rematchArea = <p className="notice" role="status">{opponentName} saiu. Não há mais revanche.</p>;
+        break;
+      case "unavailable":
+        rematchArea = <p className="notice" role="status">Não foi possível começar a revanche agora.</p>;
+        break;
+    }
+  }
+
   return (
     <section className="card center result">
       <h1>{title}</h1>
       <p>{detail}</p>
-      <button className="button primary" onClick={onExit}>
-        Voltar ao saguão
+      {rematchArea}
+      <p className="hint">Revanche vale só para vocês dois e não entra no ranking: conta apenas a primeira partida.</p>
+      <button className="button" onClick={onExit}>
+        Novo adversário (voltar ao saguão)
       </button>
     </section>
   );

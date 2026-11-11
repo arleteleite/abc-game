@@ -7,6 +7,7 @@ import type {
   Player,
   PublicQuestion,
   RaceDecision,
+  RematchState,
 } from "@abc-game/domain";
 
 // ---------------------------------------------------------------------------
@@ -57,6 +58,9 @@ export type ClientMessage =
   | { type: "race_answer"; questionId: string; choice: OptionKey | null }
   | { type: "answer"; questionId: string; choice: OptionKey | null }
   | { type: "leave" }
+  /** Quero a revanche (pedido novo ou aceite do pedido do adversário). */
+  | { type: "rematch_request" }
+  | { type: "rematch_decline" }
   | { type: "ping"; t: number };
 
 export interface PlayerInfo {
@@ -96,6 +100,10 @@ export type ServerMessage =
   | { type: "state"; currentPlayerId: string | null; players: PlayerState[] }
   | { type: "opponent_status"; connected: boolean; graceMs: number }
   | { type: "match_ended"; result: MatchResult; winnerNickname: string | null }
+  /** Situação da revanche depois do fim da partida. `requestedBy` = quem pediu (enquanto pendente). */
+  | { type: "rematch_status"; state: RematchState | "unavailable"; requestedBy: string | null; expiresInMs: number | null }
+  /** Os dois aceitaram: a revanche é uma partida nova; conectar nela. */
+  | { type: "rematch_started"; matchId: string }
   | { type: "error"; reason: string }
   | { type: "pong"; t: number };
 

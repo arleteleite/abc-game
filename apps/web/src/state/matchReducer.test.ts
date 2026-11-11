@@ -97,4 +97,20 @@ describe("matchReducer", () => {
     const s = send(initialMatchState, { type: "opponent_status", connected: false, graceMs: 30000 });
     expect(s.opponentConnected).toBe(false);
   });
+
+  it("revanche: guarda quem pediu e, quando os dois aceitam, a partida nova", () => {
+    let s = send(initialMatchState, { type: "rematch_status", state: "pending", requestedBy: "op", expiresInMs: 180000 });
+    expect(s.rematch).toEqual({ state: "pending", requestedBy: "op" });
+    expect(s.nextMatchId).toBeNull();
+
+    s = send(s, { type: "rematch_status", state: "agreed", requestedBy: null, expiresInMs: 100000 });
+    expect(s.rematch?.state).toBe("agreed");
+    s = send(s, { type: "rematch_started", matchId: "nova-partida" });
+    expect(s.nextMatchId).toBe("nova-partida");
+  });
+
+  it("revanche indisponível (por exemplo, abandono) também é registrada", () => {
+    const s = send(initialMatchState, { type: "rematch_status", state: "unavailable", requestedBy: null, expiresInMs: null });
+    expect(s.rematch?.state).toBe("unavailable");
+  });
 });

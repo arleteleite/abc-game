@@ -25,6 +25,10 @@ export function parseClientMessage(raw: unknown): ClientMessage | null {
       return null;
     case "leave":
       return { type: "leave" };
+    case "rematch_request":
+      return { type: "rematch_request" };
+    case "rematch_decline":
+      return { type: "rematch_decline" };
     case "ping":
       return typeof m["t"] === "number" ? { type: "ping", t: m["t"] } : null;
     default:

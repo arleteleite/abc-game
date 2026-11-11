@@ -7,6 +7,7 @@ import {
   PlayerRegistry,
   SystemClock,
   type LobbySnapshot,
+  type MatchSetup,
   type Pawn,
   type Player,
 } from "@abc-game/domain";
@@ -54,6 +55,11 @@ export class LobbyObject extends DurableObject<Env> {
     // Pela internet ela nunca é alcançada, porque o roteador só repassa /api/*.
     if (method === "POST" && path === "/internal/match-ended" && !url.pathname.startsWith("/api")) {
       return this.matchEnded(request);
+    }
+
+    // Rota interna: a partida (Durable Object) pede a revanche depois de os dois aceitarem.
+    if (method === "POST" && path === "/internal/rematch" && !url.pathname.startsWith("/api")) {
+      return this.rematch(request);
     }
 
     // Rota interna usada pelo roteador do Quiz: confere o token e diz quem é o jogador.
@@ -137,7 +143,32 @@ export class LobbyObject extends DurableObject<Env> {
     const result = this.lobby.accept(invitationId, player.id, (body as unknown as AcceptRequest).pawn);
     if (!result.ok) return errorResponse(result.reason, 409);
 
-    const { matchId, players } = result.value;
+    const started = await this.launchMatch(result.value, false);
+    return started ? json({ matchId: result.value.matchId } satisfies MatchCreatedResponse) : errorResponse("match_unavailable", 503);
+  }
+
+  /** Revanche pedida pela partida que acabou: mesma dupla e mesmos peões, partida nova fora do ranking. */
+  private async rematch(request: Request): Promise<Response> {
+    const body = await readJson(request);
+    const first = body?.["first"] as { playerId?: unknown; pawn?: unknown } | undefined;
+    const second = body?.["second"] as { playerId?: unknown; pawn?: unknown } | undefined;
+    if (!first || !second || typeof first.playerId !== "string" || typeof second.playerId !== "string" || !isPawn(first.pawn) || !isPawn(second.pawn)) {
+      return errorResponse("invalid_request", 400);
+    }
+    const previous = typeof body?.["previousMatchId"] === "string" ? body["previousMatchId"] : undefined;
+    const result = this.lobby.startRematch(
+      { playerId: first.playerId, pawn: first.pawn },
+      { playerId: second.playerId, pawn: second.pawn },
+      previous,
+    );
+    if (!result.ok) return errorResponse(result.reason, 409);
+    const started = await this.launchMatch(result.value, true);
+    return started ? json({ matchId: result.value.matchId }) : errorResponse("match_unavailable", 503);
+  }
+
+  /** Cria a partida (Durable Object) para a dupla. Se falhar, libera os dois jogadores. */
+  private async launchMatch(setup: MatchSetup, isRematch: boolean): Promise<boolean> {
+    const { matchId, players } = setup;
     const init: MatchInit = {
       matchId,
       players: players.map((p) => ({
@@ -146,17 +177,16 @@ export class LobbyObject extends DurableObject<Env> {
         pawn: p.pawn,
         token: this.lobby.tokenOf(p.playerId) as string,
       })) as MatchInit["players"],
+      ...(isRematch ? { isRematch: true } : {}),
     };
     const stub = this.env.MATCH.get(this.env.MATCH.idFromName(matchId));
     const started = await stub.fetch("https://match/init", { method: "POST", body: JSON.stringify(init) });
     if (!started.ok) {
       // Não foi possível criar a partida (por exemplo, banco de perguntas vazio): libera os dois.
       this.lobby.finishMatch(matchId);
-      await this.persist();
-      return errorResponse("match_unavailable", 503);
     }
     await this.persist();
-    return json({ matchId } satisfies MatchCreatedResponse);
+    return started.ok;
   }
 
   private respond(result: { ok: true } | { ok: false; reason: string }): Response {

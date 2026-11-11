@@ -44,5 +44,8 @@ export function useMatch(matchId: string, token: string) {
     connection.current?.send({ type: "leave" });
   }, []);
 
-  return { state, answer, leave };
+  const requestRematch = useCallback(() => connection.current?.send({ type: "rematch_request" }), []);
+  const declineRematch = useCallback(() => connection.current?.send({ type: "rematch_decline" }), []);
+
+  return { state, answer, leave, requestRematch, declineRematch };
 }

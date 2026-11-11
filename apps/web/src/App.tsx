@@ -108,7 +108,15 @@ export function App() {
     case "quiz":
       return <QuizScreen api={api} onExit={goMenu} onSessionLost={dropSession} />;
     case "match":
-      return <MatchScreen matchId={screen.matchId} token={session.token} onExit={() => setScreen({ name: "lobby" })} />;
+      return (
+        <MatchScreen
+          key={screen.matchId}
+          matchId={screen.matchId}
+          token={session.token}
+          onExit={() => setScreen({ name: "lobby" })}
+          onRematch={goMatch}
+        />
+      );
     case "lobby":
       return <LobbyScreen api={api} session={session} onMatch={goMatch} onMenu={goMenu} onLeave={dropSession} onSessionLost={dropSession} />;
   }

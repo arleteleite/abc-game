@@ -278,3 +278,64 @@ describe("Lobby: convite por link (WhatsApp)", () => {
     expect(lobby.invitationInfo(link.value.id)).toBeNull();
   });
 });
+
+describe("Lobby: revanche", () => {
+  const twoInAMatch = () => {
+    const ctx = setup();
+    const ana = ctx.join("Ana");
+    const beto = ctx.join("Beto");
+    const inv = ctx.lobby.invite(ana.player.id, beto.player.id, "vaca");
+    if (!inv.ok) throw new Error("falha");
+    const accepted = ctx.lobby.accept(inv.value.id, beto.player.id, "ovelha");
+    if (!accepted.ok) throw new Error("falha");
+    ctx.lobby.finishMatch(accepted.value.matchId); // a primeira partida terminou
+    return { ...ctx, ana, beto };
+  };
+
+  it("cria uma partida nova com os mesmos jogadores e peões", () => {
+    const { lobby, ana, beto } = twoInAMatch();
+    const rematch = lobby.startRematch({ playerId: ana.player.id, pawn: "vaca" }, { playerId: beto.player.id, pawn: "ovelha" });
+    if (!rematch.ok) throw new Error(rematch.reason);
+    expect(rematch.value.players.map((p) => [p.nickname, p.pawn])).toEqual([["Ana", "vaca"], ["Beto", "ovelha"]]);
+    expect(lobby.view(ana.player.id).matchId).toBe(rematch.value.matchId);
+    expect(lobby.view(beto.player.id).matchId).toBe(rematch.value.matchId);
+  });
+
+  it("não começa se um dos dois já entrou em outra partida", () => {
+    const { lobby, ana, beto, join } = twoInAMatch();
+    const cris = join("Cris");
+    const inv = lobby.invite(cris.player.id, beto.player.id, "milho");
+    if (!inv.ok) throw new Error("falha");
+    lobby.view(beto.player.id);
+    lobby.accept(inv.value.id, beto.player.id, "eucalipto"); // Beto foi jogar com a Cris
+    expect(lobby.startRematch({ playerId: ana.player.id, pawn: "vaca" }, { playerId: beto.player.id, pawn: "ovelha" })).toEqual({
+      ok: false,
+      reason: "player_busy",
+    });
+  });
+
+  it("não começa se um dos dois saiu do jogo", () => {
+    const { lobby, ana, beto } = twoInAMatch();
+    lobby.leave(beto.player.id);
+    expect(lobby.startRematch({ playerId: ana.player.id, pawn: "vaca" }, { playerId: beto.player.id, pawn: "ovelha" })).toEqual({
+      ok: false,
+      reason: "unknown_player",
+    });
+  });
+
+  it("aceita a revanche mesmo se o fim da partida anterior ainda não foi avisado ao saguão", () => {
+    const ctx = setup();
+    const ana = ctx.join("Ana");
+    const beto = ctx.join("Beto");
+    const inv = ctx.lobby.invite(ana.player.id, beto.player.id, "vaca");
+    if (!inv.ok) throw new Error("falha");
+    const first = ctx.lobby.accept(inv.value.id, beto.player.id, "ovelha");
+    if (!first.ok) throw new Error("falha");
+    // Sem finishMatch: os dois ainda constam na partida anterior (o aviso está a caminho).
+    const asked = { playerId: ana.player.id, pawn: "vaca" as const };
+    const other = { playerId: beto.player.id, pawn: "ovelha" as const };
+    expect(ctx.lobby.startRematch(asked, other)).toEqual({ ok: false, reason: "player_busy" });
+    const rematch = ctx.lobby.startRematch(asked, other, first.value.matchId);
+    expect(rematch.ok).toBe(true);
+  });
+});

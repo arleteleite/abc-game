@@ -57,6 +57,7 @@ export { StartRace, type RaceAnswer, type RaceDecision, type RaceStatus } from "
 export { TurnManager, type AnswerRejection } from "./match/TurnManager";
 export { DisconnectPolicy, type ConnectionStatus } from "./match/DisconnectPolicy";
 export { Match, type MatchDependencies } from "./match/Match";
+export { RematchOffer, type RematchProblem, type RematchState, type RematchStatus } from "./match/RematchOffer";
 export type {
   AnswerOutcome,
   EndReason,

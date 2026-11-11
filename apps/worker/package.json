@@ -15,7 +15,8 @@
     "typecheck": "tsc --noEmit",
     "e2e:quiz": "node scripts/e2e-quiz.mjs",
     "e2e:ranking": "node scripts/e2e-ranking.mjs",
-    "e2e:link": "node scripts/e2e-link.mjs"
+    "e2e:link": "node scripts/e2e-link.mjs",
+    "e2e:rematch": "node scripts/e2e-rematch.mjs"
   },
   "devDependencies": {
     "@cloudflare/workers-types": "^5.20261110.1",

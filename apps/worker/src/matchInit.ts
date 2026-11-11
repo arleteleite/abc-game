@@ -5,6 +5,8 @@ import type { Pawn } from "@abc-game/domain";
 export interface MatchInit {
   matchId: string;
   players: [MatchInitPlayer, MatchInitPlayer];
+  /** Revanche: a partida vale normalmente, mas nunca entra no ranking. */
+  isRematch?: boolean;
 }
 
 export interface MatchInitPlayer {

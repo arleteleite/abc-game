@@ -261,6 +261,39 @@ export class Lobby {
     });
   }
 
+  /**
+   * Revanche (PRD 7.6): os mesmos dois jogadores, com os mesmos peões, numa partida nova.
+   * Só começa se nenhum dos dois entrou em outra partida nesse meio tempo.
+   */
+  startRematch(
+    first: { playerId: string; pawn: Pawn },
+    second: { playerId: string; pawn: Pawn },
+    /** A partida que acabou de terminar: se o aviso de fim ainda não chegou ao saguão, ela é encerrada aqui. */
+    previousMatchId?: string,
+  ): Result<MatchSetup, "unknown_player" | "player_busy"> {
+    if (previousMatchId) this.finishMatch(previousMatchId);
+    const a = this.registry.get(first.playerId);
+    const b = this.registry.get(second.playerId);
+    if (!a || !b) return fail("unknown_player");
+    if (this.inMatch.has(a.id) || this.inMatch.has(b.id)) return fail("player_busy");
+
+    const matchId = this.ids.next();
+    this.matchStartedAt.set(matchId, this.clock.now());
+    this.inMatch.set(a.id, matchId);
+    this.inMatch.set(b.id, matchId);
+    for (const id of [a.id, b.id]) {
+      this.cancelOpenInvitationsFrom(id);
+      this.cancelOpenInvitationsTo(id);
+    }
+    return ok({
+      matchId,
+      players: [
+        { playerId: a.id, nickname: a.nickname, pawn: first.pawn },
+        { playerId: b.id, nickname: b.nickname, pawn: second.pawn },
+      ],
+    });
+  }
+
   decline(invitationId: string, playerId: string): Result<void, RespondProblem> {
     const invitation = this.invitations.get(invitationId);
     if (!invitation) return fail("unknown_invitation");

@@ -10,6 +10,8 @@ describe("parseClientMessage", () => {
     });
     expect(parseClientMessage('{"type":"race_answer","questionId":"q1","choice":null}')).toMatchObject({ choice: null });
     expect(parseClientMessage('{"type":"leave"}')).toEqual({ type: "leave" });
+    expect(parseClientMessage('{"type":"rematch_request"}')).toEqual({ type: "rematch_request" });
+    expect(parseClientMessage('{"type":"rematch_decline"}')).toEqual({ type: "rematch_decline" });
     expect(parseClientMessage('{"type":"ping","t":5}')).toEqual({ type: "ping", t: 5 });
   });
 
