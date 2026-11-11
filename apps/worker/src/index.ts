@@ -1,32 +1,28 @@
-import { SpikeRoom } from "./SpikeRoom";
-import { SPIKE_PAGE } from "./spikePage";
+import type { Env } from "./env";
+import { errorResponse } from "./http/json";
+import { LobbyObject } from "./LobbyObject";
+import { MatchObject } from "./MatchObject";
 
-// Worker do SPIKE (etapa 2). O roteador só encaminha: a lógica fica na sala.
-export { SpikeRoom };
-
-interface Env {
-  SPIKE_ROOM: DurableObjectNamespace<SpikeRoom>;
-}
+// O Worker só encaminha: nada de regra de jogo aqui.
+export { LobbyObject, MatchObject };
 
 export default {
   async fetch(request: Request, env: Env): Promise<Response> {
     const url = new URL(request.url);
-    const parts = url.pathname.split("/").filter(Boolean);
 
-    if (parts.length === 0) {
-      return new Response(SPIKE_PAGE, {
-        headers: { "content-type": "text/html; charset=utf-8" },
-      });
+    // WebSocket da partida: /api/match/<id>/ws?token=...
+    const ws = /^\/api\/match\/([\w-]{1,64})\/ws$/.exec(url.pathname);
+    if (ws) {
+      const matchId = ws[1] as string;
+      return env.MATCH.get(env.MATCH.idFromName(matchId)).fetch(request);
     }
 
-    // /ws/<sala> (WebSocket) e /stats/<sala> (HTTP) vão para a mesma sala.
-    if ((parts[0] === "ws" || parts[0] === "stats") && parts[1]) {
-      const stub = env.SPIKE_ROOM.get(env.SPIKE_ROOM.idFromName(parts[1]));
-      const target = new URL(request.url);
-      target.pathname = `/${parts[0]}`;
-      return stub.fetch(new Request(target, request));
+    // Saguão (entrar, lista, convites). A rota interna não passa por aqui.
+    if (url.pathname.startsWith("/api/")) {
+      return env.LOBBY.get(env.LOBBY.idFromName("main")).fetch(request);
     }
 
-    return new Response("Não encontrado", { status: 404 });
+    if (url.pathname === "/health") return new Response("ok");
+    return errorResponse("not_found", 404);
   },
 };

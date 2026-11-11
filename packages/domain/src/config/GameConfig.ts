@@ -50,6 +50,13 @@ export interface RankingConfig {
   pollingSeconds: number;
 }
 
+export interface LobbyConfig {
+  /** Sem sinal de vida por este tempo, o jogador sai da lista de disponíveis. [P] */
+  presenceTimeoutSeconds: number;
+  /** Segurança: partida que não avisou o fim em tanto tempo libera os jogadores. [P] */
+  matchMaxSeconds: number;
+}
+
 export interface NicknameConfig {
   minLength: number;
   maxLength: number;
@@ -68,6 +75,7 @@ export interface GameConfig {
   ranking: RankingConfig;
   questionBank: QuestionBankConfig;
   nickname: NicknameConfig;
+  lobby: LobbyConfig;
 }
 
 export const DEFAULT_GAME_CONFIG: GameConfig = {
@@ -96,4 +104,5 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
   ranking: { topSize: 5, pollingSeconds: 15 },
   questionBank: { minValidatedPerLevel: 30, reducedMinValidatedPerLevel: 20 },
   nickname: { minLength: 2, maxLength: 16, blockedTerms: [] },
+  lobby: { presenceTimeoutSeconds: 45, matchMaxSeconds: 900 },
 };

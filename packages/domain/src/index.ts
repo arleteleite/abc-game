@@ -11,6 +11,7 @@ export type {
   BoardEventConfig,
   BoardEventKind,
   GameConfig,
+  LobbyConfig,
   NicknameConfig,
   QuestionBankConfig,
   QuizConfig,
@@ -48,7 +49,7 @@ export type { IdGenerator } from "./ids/IdGenerator";
 export { SequentialIdGenerator } from "./ids/SequentialIdGenerator";
 export type { Player } from "./players/Player";
 export { NicknameValidator, type NicknameProblem, type ValidNickname } from "./players/NicknameValidator";
-export { PlayerRegistry, type JoinProblem } from "./players/PlayerRegistry";
+export { PlayerRegistry, type JoinedPlayer, type JoinProblem } from "./players/PlayerRegistry";
 export { Invitation, type InvitationProblem, type InvitationState } from "./invitations/Invitation";
 export type { QuestionDealer } from "./questions/QuestionDealer";
 export type { QuestionPresenter } from "./questions/QuestionPresenter";
@@ -68,3 +69,9 @@ export type {
   TickResult,
   TurnPrompt,
 } from "./match/MatchTypes";
+
+// Etapa 5: saguão e resultados
+export { Lobby, type LobbySnapshot, type InvitationView, type InviteProblem, type LobbyView, type MatchSetup, type RespondProblem } from "./lobby/Lobby";
+export type { TrailRecord } from "./results/TrailRecord";
+export type { TrailResultRepository } from "./results/TrailResultRepository";
+export { InMemoryTrailResultRepository } from "./results/InMemoryTrailResultRepository";
