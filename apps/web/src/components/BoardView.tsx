@@ -1,6 +1,8 @@
 import type { PlayerInfo, PlayerState } from "@abc-game/protocol";
-import { BOARD_COLUMNS, cellOfSquare, stageForPosition } from "../board/boardLayout";
+import { stageForPosition, trailPath, trailPoint } from "../board/boardLayout";
 import { EVENT_ICONS } from "../constants";
+import { useSteppedPositions } from "../hooks/useSteppedPositions";
+import { FarmBackground } from "./FarmBackground";
 import { PawnImage } from "./PawnImage";
 
 interface Props {
@@ -9,62 +11,66 @@ interface Props {
   you: PlayerInfo;
   opponent: PlayerInfo;
   currentPlayerId: string | null;
+  /** Durante a pergunta o tabuleiro encolhe para sobrar espaço para ela. */
+  compact?: boolean;
 }
 
-// O tabuleiro é desenhado pelo app (15 casas em cobrinha) sobre a cena da
-// propriedade, que muda conforme quem está na frente.
-export function BoardView({ boardSize, players, you, opponent, currentPlayerId }: Props) {
-  const positionOf = (id: string) => players.find((p) => p.playerId === id)?.position ?? 0;
-  const leader = Math.max(positionOf(you.id), positionOf(opponent.id));
-  const stage = stageForPosition(leader);
-  const rows = Math.ceil(boardSize / BOARD_COLUMNS);
-
+// O tabuleiro é uma trilha sinuosa desenhada pelo app sobre a cena da
+// propriedade: começa embaixo, sobe em "S" e termina no alto. A cena muda
+// conforme quem está na frente, e os peões andam casa por casa.
+export function BoardView({ boardSize, players, you, opponent, currentPlayerId, compact = false }: Props) {
+  const target: Record<string, number> = {
+    [you.id]: players.find((p) => p.playerId === you.id)?.position ?? 0,
+    [opponent.id]: players.find((p) => p.playerId === opponent.id)?.position ?? 0,
+  };
+  const shown = useSteppedPositions(target);
+  const where = (id: string) => shown[id] ?? target[id] ?? 0;
+  const stage = stageForPosition(Math.max(where(you.id), where(opponent.id)));
+  const pawnSize = compact ? 34 : 44;
   const squares = Array.from({ length: boardSize }, (_, i) => i + 1);
-  const pawnsAt = (square: number) =>
-    [you, opponent].filter((p) => positionOf(p.id) === square);
-  const atStart = [you, opponent].filter((p) => positionOf(p.id) === 0);
+  const together = where(you.id) === where(opponent.id);
 
   return (
-    <div className="board-wrapper">
-      <div className="board-start" aria-label="Largada">
-        <span className="board-start-label">Largada</span>
-        {atStart.map((p) => (
-          <PawnImage key={p.id} pawn={p.pawn} size={44} />
-        ))}
-      </div>
+    <div className={`trail ${compact ? "compact" : ""}`}>
+      <FarmBackground stage={stage} />
+      <svg className="trail-svg" viewBox="0 0 100 100" preserveAspectRatio="none" aria-hidden="true">
+        <path className="trail-edge" d={trailPath(boardSize)} vectorEffect="non-scaling-stroke" />
+        <path className="trail-road" d={trailPath(boardSize)} vectorEffect="non-scaling-stroke" />
+      </svg>
 
-      <div
-        className="board"
-        style={{
-          backgroundImage: `url(/img/cena-fazenda-${stage}.webp)`,
-          gridTemplateColumns: `repeat(${BOARD_COLUMNS}, 1fr)`,
-          gridTemplateRows: `repeat(${rows}, 1fr)`,
-        }}
-      >
-        {squares.map((square) => {
-          const { row, col } = cellOfSquare(square);
-          const event = EVENT_ICONS[square];
-          const here = pawnsAt(square);
-          return (
-            <div
-              key={square}
-              className={`square ${square === boardSize ? "finish" : ""} ${event ? "has-event" : ""}`}
-              style={{ gridRow: row + 1, gridColumn: col + 1 }}
-              title={event?.label}
-            >
-              <span className="square-number">{square === boardSize ? "🏁" : square}</span>
-              {event && <img className="event-icon" src={`/img/${event.icon}.webp`} alt={event.label} width={28} height={28} />}
-              <div className="square-pawns">
-                {here.map((p) => (
-                  <span key={p.id} className={`pawn-wrap ${p.id === currentPlayerId ? "active" : ""} ${p.id === you.id ? "mine" : ""}`}>
-                    <PawnImage pawn={p.pawn} size={36} />
-                  </span>
-                ))}
-              </div>
-            </div>
-          );
-        })}
-      </div>
+      <span className="trail-label start-label" style={{ left: `${trailPoint(0, boardSize).x}%`, top: `${trailPoint(0, boardSize).y}%` }}>
+        Largada
+      </span>
+
+      {squares.map((square) => {
+        const { x, y } = trailPoint(square, boardSize);
+        const event = EVENT_ICONS[square];
+        const finish = square === boardSize;
+        return (
+          <div key={square} className={`mark ${event ? "has-event" : ""} ${finish ? "finish" : ""}`} style={{ left: `${x}%`, top: `${y}%` }} title={event?.label}>
+            {event && (
+              <span className="event-tag">
+                <img src={`/img/${event.icon}.webp`} alt={event.label} width={30} height={30} />
+              </span>
+            )}
+            <span className="mark-number">{finish ? "🏁" : square}</span>
+          </div>
+        );
+      })}
+
+      {[you, opponent].map((p) => {
+        const { x, y } = trailPoint(where(p.id), boardSize);
+        const side = together ? (p.id === you.id ? -1 : 1) : 0;
+        return (
+          <span
+            key={p.id}
+            className={`trail-pawn ${p.id === currentPlayerId ? "active" : ""} ${p.id === you.id ? "mine" : ""}`}
+            style={{ left: `calc(${x}% + ${side * (pawnSize / 2.4)}px)`, top: `${y}%` }}
+          >
+            <PawnImage pawn={p.pawn} size={pawnSize} />
+          </span>
+        );
+      })}
     </div>
   );
 }

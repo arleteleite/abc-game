@@ -75,6 +75,14 @@ export interface PlayerState {
   skipsNextTurn: boolean;
 }
 
+/** Resumo de um jogador no fim da partida. */
+export interface FinalPlayerStats {
+  playerId: string;
+  position: number;
+  asked: number;
+  correct: number;
+}
+
 export type ServerMessage =
   /** Primeira mensagem após conectar (e após reconectar). */
   | { type: "welcome"; you: PlayerInfo; opponent: PlayerInfo; boardSize: number }
@@ -99,7 +107,13 @@ export type ServerMessage =
     }
   | { type: "state"; currentPlayerId: string | null; players: PlayerState[] }
   | { type: "opponent_status"; connected: boolean; graceMs: number }
-  | { type: "match_ended"; result: MatchResult; winnerNickname: string | null }
+  | {
+      type: "match_ended";
+      result: MatchResult;
+      winnerNickname: string | null;
+      /** Fim da partida: casa final, perguntas feitas e acertos de cada jogador. */
+      finalStats: FinalPlayerStats[];
+    }
   /** Situação da revanche depois do fim da partida. `requestedBy` = quem pediu (enquanto pendente). */
   | { type: "rematch_status"; state: RematchState | "unavailable"; requestedBy: string | null; expiresInMs: number | null }
   /** Os dois aceitaram: a revanche é uma partida nova; conectar nela. */

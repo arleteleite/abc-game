@@ -114,7 +114,7 @@ while (Date.now() < deadline) {
   if ((await a.getByText("Voltar ao saguão").count()) > 0 && (await b.getByText("Voltar ao saguão").count()) > 0) break;
   await answerIfQuestion(a, true);
   await answerIfQuestion(b, false);
-  if (!shotBoard && (await a.locator(".board").count()) > 0) {
+  if (!shotBoard && (await a.locator(".trail").count()) > 0) {
     shotBoard = true;
     await sleep(300);
     await shot(a, "05-tabuleiro-minha-vez");

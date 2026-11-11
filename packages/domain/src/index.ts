@@ -65,6 +65,7 @@ export type {
   MatchRejection,
   MatchResult,
   MatchSnapshot,
+  PlayerStats,
   RaceOutcome,
   RacePrompt,
   TickResult,

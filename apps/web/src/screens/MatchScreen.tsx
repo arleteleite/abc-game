@@ -1,4 +1,4 @@
-import type { PlayerInfo } from "@abc-game/protocol";
+import type { FinalPlayerStats, PlayerInfo } from "@abc-game/protocol";
 import type { ReactNode } from "react";
 import { useEffect, useMemo } from "react";
 import { BoardView } from "../components/BoardView";
@@ -16,7 +16,7 @@ interface Props {
   onRematch: (matchId: string) => void;
 }
 
-const ANSWER_MS = 12_000; // só para a barra; o servidor é quem decide o estouro
+const ANSWER_MS = 15_000; // só para a barra; o servidor é quem decide o estouro
 
 export function MatchScreen({ matchId, token, onExit, onRematch }: Props) {
   const { state, answer, leave, requestRematch, declineRematch } = useMatch(matchId, token);
@@ -69,7 +69,7 @@ export function MatchScreen({ matchId, token, onExit, onRematch }: Props) {
       {state.phase === "playing" && state.you && state.opponent && (
         <>
           <FeedbackBanner feedback={state.feedback} state={state} />
-          <BoardView boardSize={state.boardSize} players={state.players} you={state.you} opponent={state.opponent} currentPlayerId={state.currentPlayerId} />
+          <BoardView boardSize={state.boardSize} players={state.players} you={state.you} opponent={state.opponent} currentPlayerId={state.currentPlayerId} compact={!!state.question} />
           {state.question ? (
             <section>
               <h2 className="phase-title">Sua vez!</h2>
@@ -160,6 +160,51 @@ function FeedbackBanner({ feedback, state }: { feedback: Feedback | null; state:
   );
 }
 
+function FinalStats({
+  you,
+  opponent,
+  stats,
+  boardSize,
+}: {
+  you: PlayerInfo;
+  opponent: PlayerInfo;
+  stats: FinalPlayerStats[];
+  boardSize: number;
+}) {
+  const row = (p: PlayerInfo, label: string) => {
+    const s = stats.find((x) => x.playerId === p.id);
+    if (!s) return null;
+    return (
+      <tr key={p.id}>
+        <th scope="row">
+          <PawnImage pawn={p.pawn} size={32} /> {label}
+          <br />
+          <strong>{p.nickname}</strong>
+        </th>
+        <td>{s.position >= boardSize ? "Chegou! 🏁" : `Casa ${s.position}`}</td>
+        <td>{s.asked}</td>
+        <td>{s.correct}</td>
+      </tr>
+    );
+  };
+  return (
+    <table className="final-stats">
+      <thead>
+        <tr>
+          <th scope="col">Jogador</th>
+          <th scope="col">Posição final</th>
+          <th scope="col">Perguntas</th>
+          <th scope="col">Acertos</th>
+        </tr>
+      </thead>
+      <tbody>
+        {row(you, "Você")}
+        {row(opponent, "Adversário")}
+      </tbody>
+    </table>
+  );
+}
+
 function ResultCard({
   state,
   onExit,
@@ -239,6 +284,13 @@ function ResultCard({
     <section className="card center result">
       <h1>{title}</h1>
       <p>{detail}</p>
+      {state.you && state.opponent && (
+        <>
+          <BoardView boardSize={state.boardSize} players={state.players} you={state.you} opponent={state.opponent} currentPlayerId={null} compact />
+          <FinalStats you={state.you} opponent={state.opponent} stats={ended.finalStats} boardSize={state.boardSize} />
+        </>
+      )}
+
       {rematchArea}
       <p className="hint">Revanche vale só para vocês dois e não entra no ranking: conta apenas a primeira partida.</p>
       <button className="button" onClick={onExit}>

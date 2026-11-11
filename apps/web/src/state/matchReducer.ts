@@ -1,5 +1,5 @@
 import type { OptionKey, MoveResult, PublicQuestion } from "@abc-game/domain";
-import type { PlayerInfo, PlayerState, ServerMessage } from "@abc-game/protocol";
+import type { FinalPlayerStats, PlayerInfo, PlayerState, ServerMessage } from "@abc-game/protocol";
 import type { ConnectionStatus } from "../net/MatchConnection";
 
 export interface RematchView {
@@ -44,7 +44,13 @@ export interface MatchViewState {
   rematch: RematchView | null;
   /** Revanche combinada: identificador da partida nova (a tela troca para ela). */
   nextMatchId: string | null;
-  ended: { endReason: string; winnerId: string | null; winnerNickname: string | null; rankable: boolean } | null;
+  ended: {
+    endReason: string;
+    winnerId: string | null;
+    winnerNickname: string | null;
+    rankable: boolean;
+    finalStats: FinalPlayerStats[];
+  } | null;
   error: string | null;
 }
 
@@ -168,7 +174,9 @@ function applyMessage(state: MatchViewState, m: ServerMessage, at: number): Matc
           winnerId: m.result.winnerId,
           winnerNickname: m.winnerNickname,
           rankable: m.result.rankable,
+          finalStats: m.finalStats,
         },
+        players: m.finalStats.map((s) => ({ playerId: s.playerId, position: s.position, skipsNextTurn: false })),
       };
     case "rematch_status":
       return { ...state, rematch: { state: m.state, requestedBy: m.requestedBy } };

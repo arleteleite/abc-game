@@ -93,7 +93,7 @@ function connect(client) {
     allRaw.push(raw);
     const m = JSON.parse(raw);
     // Contrato: a pergunta nunca traz a resposta nem a explicação.
-    if (/explanation/.test(raw) || (m.type !== "answer_result" && /"correct"\s*:/.test(raw))) {
+    if (/explanation/.test(raw) || (m.type !== "answer_result" && m.type !== "match_ended" && /"correct"\s*:/.test(raw))) {
       violations.push(`${m.type}: vazou explicação/correta`);
     }
     if ((m.type === "turn_question" || m.type === "race_question") && /correctKey/.test(raw)) {

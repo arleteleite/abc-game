@@ -63,11 +63,11 @@ describe("Match: largada", () => {
     expect(again).toEqual({ ok: false, reason: "duplicate" });
   });
 
-  it("quem não responde a largada em 12 s conta como erro (tick)", () => {
+  it("quem não responde a largada em 15 s conta como erro (tick)", () => {
     const { match, clock } = buildMatch();
     const race = match.beginRace();
     match.submitRaceAnswer("A", race.question.questionId, RIGHT);
-    clock.advance(13_000);
+    clock.advance(16_000);
     const tick = match.tick();
     expect(tick?.kind).toBe("race_expired");
     expect(match.phase).toBe("playing");
@@ -157,10 +157,10 @@ describe("Match: turnos e tabuleiro", () => {
 });
 
 describe("Match: tempo, queda e abandono", () => {
-  it("resposta depois de 12 s conta como estouro (não avança)", () => {
+  it("resposta depois de 15 s conta como estouro (não avança)", () => {
     const { match, clock } = buildMatch({ trail: NO_EVENTS_TRAIL });
     const first = startWithA(match);
-    clock.advance(12_500);
+    clock.advance(15_500);
     const out = answer(match, first, RIGHT);
     expect(out.timedOut).toBe(true);
     expect(out.correct).toBe(false);
@@ -170,7 +170,7 @@ describe("Match: tempo, queda e abandono", () => {
   it("o servidor faz valer o estouro do turno pelo tick", () => {
     const { match, clock } = buildMatch({ trail: NO_EVENTS_TRAIL });
     startWithA(match);
-    clock.advance(13_000);
+    clock.advance(16_000);
     const tick = match.tick();
     expect(tick?.kind === "turn_expired" && tick.outcome.next?.playerId).toBe("B");
   });
@@ -186,7 +186,7 @@ describe("Match: tempo, queda e abandono", () => {
 
     // Se caísse na vez dele e o tempo estourasse, perderia a resposta.
     match.playerDisconnected("A");
-    clock.advance(3000); // soma 13 s desde o início do turno
+    clock.advance(6000); // soma 16 s desde o início do turno
     expect(match.tick()?.kind).toBe("turn_expired");
   });
 
@@ -215,5 +215,31 @@ describe("Match: tempo, queda e abandono", () => {
     expect(match.tick()).toMatchObject({ kind: "match_ended" });
     expect(match.result).toMatchObject({ endReason: "time_limit", winnerId: null, rankable: false });
     expect(match.submitAnswer("A", first.question.questionId, RIGHT)).toEqual({ ok: false, reason: "match_finished" });
+  });
+});
+
+describe("Match: estatísticas do fim da partida", () => {
+  it("conta as perguntas da vez e os acertos de cada jogador (a largada não conta)", () => {
+    const { match } = buildMatch({ trail: NO_EVENTS_TRAIL });
+    let prompt = startWithA(match);
+    expect(match.playerStats()).toEqual([
+      { playerId: "A", asked: 0, correct: 0 },
+      { playerId: "B", asked: 0, correct: 0 },
+    ]);
+    prompt = answer(match, prompt, RIGHT).next as TurnPrompt; // A acerta
+    prompt = answer(match, prompt, WRONG).next as TurnPrompt; // B erra
+    answer(match, prompt, WRONG); // A erra
+    expect(match.playerStats()).toEqual([
+      { playerId: "A", asked: 2, correct: 1 },
+      { playerId: "B", asked: 1, correct: 0 },
+    ]);
+  });
+
+  it("pergunta que estoura o tempo conta como feita e não como acerto", () => {
+    const { match, clock } = buildMatch({ trail: NO_EVENTS_TRAIL });
+    startWithA(match);
+    clock.advance(16_000);
+    match.tick();
+    expect(match.playerStats()[0]).toEqual({ playerId: "A", asked: 1, correct: 0 });
   });
 });

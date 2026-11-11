@@ -86,10 +86,18 @@ describe("matchReducer", () => {
       type: "match_ended",
       result: { endReason: "winner", winnerId: "me", abandonedBy: null, winnerTotalAnswerMs: 9000, rankable: true },
       winnerNickname: "Ana",
+      finalStats: [
+        { playerId: "me", position: 15, asked: 7, correct: 5 },
+        { playerId: "op", position: 9, asked: 6, correct: 3 },
+      ],
     });
     expect(ended.phase).toBe("ended");
     expect(ended.question).toBeNull();
     expect(ended.ended).toMatchObject({ winnerNickname: "Ana", rankable: true });
+    expect(ended.ended?.finalStats[0]).toEqual({ playerId: "me", position: 15, asked: 7, correct: 5 });
+    expect(ended.players.map((p) => p.position)).toEqual([15, 9]);
+    expect(ended.ended?.finalStats[0]).toEqual({ playerId: "me", position: 15, asked: 7, correct: 5 });
+    expect(ended.players.map((p) => p.position)).toEqual([15, 9]);
   });
 
   it("registra o estado da conexão e do adversário", () => {

@@ -7,6 +7,13 @@ import type { RaceDecision } from "./StartRace";
 export type MatchPhase = "race" | "playing" | "finished";
 export type EndReason = "winner" | "abandoned" | "time_limit";
 
+/** Quantas perguntas da vez o jogador respondeu (ou estourou) e quantas acertou. */
+export interface PlayerStats {
+  playerId: string;
+  asked: number;
+  correct: number;
+}
+
 export interface MatchResult {
   endReason: EndReason;
   winnerId: string | null;

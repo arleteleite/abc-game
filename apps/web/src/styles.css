@@ -367,80 +367,126 @@ h2 {
   opacity: 0.6;
 }
 
-/* ---------- tabuleiro ---------- */
-.board-wrapper {
-  display: flex;
-  flex-direction: column;
-  gap: 6px;
-}
-.board-start {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  min-height: 48px;
-}
-.board-start-label {
-  font-weight: 700;
-  color: var(--green-dark);
-}
-.board {
-  display: grid;
-  gap: 4px;
-  padding: 6px;
+/* ---------- tabuleiro: trilha sinuosa ---------- */
+.trail {
+  position: relative;
+  width: 100%;
+  height: min(54vh, 480px);
   border-radius: var(--radius);
   background-color: #cfe5d2;
   background-size: cover;
   background-position: center;
-  aspect-ratio: 5 / 3.4;
+  overflow: hidden;
+  transition: height 0.3s ease;
 }
-.square {
-  position: relative;
-  border-radius: 10px;
-  background: #ffffffcc;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: space-between;
-  padding: 2px;
-  min-width: 0;
+.trail.compact {
+  height: min(30vh, 260px);
 }
-.square.has-event {
-  background: #fff3b8dd;
-  outline: 2px solid var(--gold);
+.farm-bg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  animation: farm-fade 0.6s ease;
 }
-.square.finish {
-  background: #ffe27acc;
+@keyframes farm-fade {
+  from { opacity: 0.2; }
+  to { opacity: 1; }
 }
-.square-number {
-  align-self: flex-start;
+.trail-svg {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+}
+.trail-edge {
+  fill: none;
+  stroke: #8a6a35;
+  stroke-width: 22;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.trail-road {
+  fill: none;
+  stroke: #ecd9a6;
+  stroke-width: 16;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+.trail.compact .trail-edge { stroke-width: 16; }
+.trail.compact .trail-road { stroke-width: 11; }
+.trail-label {
+  position: absolute;
+  transform: translate(-50%, 0);
   font-size: 0.7rem;
   font-weight: 700;
   color: var(--green-dark);
-  padding-left: 3px;
+  background: #ffffffdd;
+  border-radius: 8px;
+  padding: 1px 6px;
 }
-.event-icon {
+.start-label { margin-top: -62px; }
+.mark {
   position: absolute;
-  top: 2px;
-  right: 2px;
-  object-fit: contain;
-}
-.square-pawns {
+  transform: translate(-50%, -50%);
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #fffffff0;
+  border: 2px solid var(--green-dark);
   display: flex;
-  gap: 2px;
+  align-items: center;
   justify-content: center;
 }
-.pawn-wrap {
-  display: block;
+.trail.compact .mark { width: 20px; height: 20px; }
+.mark-number {
+  font-size: 0.72rem;
+  font-weight: 800;
+  color: var(--green-dark);
+  line-height: 1;
+}
+.trail.compact .mark-number { font-size: 0.6rem; }
+.mark.has-event {
+  background: #fff3b8;
+  border-color: var(--gold);
+}
+.mark.finish {
+  width: 34px;
+  height: 34px;
+  background: #ffe27a;
+  border-color: var(--gold);
+}
+.event-tag {
+  position: absolute;
+  bottom: 100%;
+  left: 50%;
+  transform: translate(-50%, 2px);
+  background: #fffffff0;
+  border: 2px solid var(--gold);
+  border-radius: 50%;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.trail.compact .event-tag { width: 28px; height: 28px; }
+.trail.compact .event-tag img { width: 22px; height: 22px; }
+.trail-pawn {
+  position: absolute;
+  transform: translate(-50%, -78%);
   border-radius: 50%;
   background: #ffffffee;
-  border: 2px solid transparent;
+  border: 3px solid transparent;
+  transition: left 0.25s linear, top 0.25s linear;
+  z-index: 2;
+  line-height: 0;
 }
-.pawn-wrap.mine {
-  border-color: var(--blue);
-}
-.pawn-wrap.active {
+.trail-pawn.mine { border-color: var(--blue); }
+.trail-pawn.active {
   border-color: var(--gold);
-  box-shadow: 0 0 0 2px var(--gold);
+  box-shadow: 0 0 0 3px var(--gold);
+  z-index: 3;
 }
 
 .result {
@@ -586,4 +632,31 @@ h2 {
 }
 .link-box {
   font-size: 0.85rem;
+}
+
+.final-stats {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 12px 0;
+  font-size: 0.9rem;
+  text-align: center;
+}
+.final-stats th,
+.final-stats td {
+  padding: 6px 4px;
+  border-bottom: 1px solid #0001;
+}
+.final-stats tbody th {
+  text-align: left;
+  font-weight: 400;
+}
+.final-stats thead th {
+  font-size: 0.75rem;
+  color: var(--green-dark);
+}
+.final-stats .pawn-image {
+  vertical-align: middle;
+}
+.result .trail {
+  margin-top: 12px;
 }

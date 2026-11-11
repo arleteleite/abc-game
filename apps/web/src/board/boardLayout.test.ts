@@ -1,36 +1,42 @@
 import { describe, expect, it } from "vitest";
-import { cellOfSquare, stageForPosition } from "./boardLayout";
+import { stageForPosition, trailPath, trailPoint } from "./boardLayout";
 
-describe("cellOfSquare (tabuleiro em cobrinha, 5 colunas)", () => {
-  it("a primeira linha vai da esquerda para a direita", () => {
-    expect([1, 2, 3, 4, 5].map((s) => cellOfSquare(s))).toEqual([
-      { row: 0, col: 0 }, { row: 0, col: 1 }, { row: 0, col: 2 }, { row: 0, col: 3 }, { row: 0, col: 4 },
-    ]);
+describe("trailPoint (trilha sinuosa que sobe)", () => {
+  it("a largada fica embaixo e a casa final no alto", () => {
+    expect(trailPoint(0, 15).y).toBeGreaterThan(trailPoint(1, 15).y);
+    expect(trailPoint(15, 15).y).toBeLessThan(trailPoint(1, 15).y);
   });
 
-  it("a segunda linha volta da direita para a esquerda", () => {
-    expect(cellOfSquare(6)).toEqual({ row: 1, col: 4 });
-    expect(cellOfSquare(10)).toEqual({ row: 1, col: 0 });
+  it("o primeiro trecho vai para a direita e o segundo volta para a esquerda", () => {
+    expect(trailPoint(5, 15).x).toBeGreaterThan(trailPoint(1, 15).x);
+    expect(trailPoint(10, 15).x).toBeLessThan(trailPoint(6, 15).x);
   });
 
-  it("a terceira linha vai de novo para a direita, e a casa 15 fecha o caminho", () => {
-    expect(cellOfSquare(11)).toEqual({ row: 2, col: 0 });
-    expect(cellOfSquare(15)).toEqual({ row: 2, col: 4 });
-  });
-
-  it("casas consecutivas são sempre vizinhas (o caminho não 'pula')", () => {
-    for (let s = 1; s < 15; s++) {
-      const a = cellOfSquare(s);
-      const b = cellOfSquare(s + 1);
-      expect(Math.abs(a.row - b.row) + Math.abs(a.col - b.col)).toBe(1);
+  it("todas as casas ficam dentro do tabuleiro e afastadas umas das outras", () => {
+    const pts = Array.from({ length: 16 }, (_, i) => trailPoint(i, 15));
+    for (const p of pts) {
+      expect(p.x).toBeGreaterThanOrEqual(0);
+      expect(p.x).toBeLessThanOrEqual(100);
+      expect(p.y).toBeGreaterThanOrEqual(0);
+      expect(p.y).toBeLessThanOrEqual(100);
     }
+    for (let i = 0; i < pts.length; i++)
+      for (let j = i + 1; j < pts.length; j++) {
+        expect(Math.hypot(pts[i]!.x - pts[j]!.x, pts[i]!.y - pts[j]!.y)).toBeGreaterThan(5);
+      }
+  });
+
+  it("funciona também para 20 casas", () => {
+    expect(trailPoint(20, 20).y).toBeLessThan(trailPoint(1, 20).y);
+  });
+
+  it("o desenho do caminho tem uma curva por casa", () => {
+    expect(trailPath(15).match(/C/g)).toHaveLength(15);
   });
 });
 
-describe("stageForPosition (troca de cena nas casas 2, 4, 7 e 10)", () => {
-  it.each([
-    [0, 1], [1, 1], [2, 2], [3, 2], [4, 3], [6, 3], [7, 4], [9, 4], [10, 5], [15, 5],
-  ])("casa %i → cena %i", (position, stage) => {
-    expect(stageForPosition(position)).toBe(stage);
+describe("stageForPosition", () => {
+  it("troca de cena nas casas 2, 4, 7 e 10", () => {
+    expect([0, 1, 2, 3, 4, 6, 7, 9, 10, 15].map(stageForPosition)).toEqual([1, 1, 2, 2, 3, 3, 4, 4, 5, 5]);
   });
 });

@@ -19,6 +19,7 @@ import type {
   RacePrompt,
   TickResult,
   TurnPrompt,
+  PlayerStats,
 } from "./MatchTypes";
 import { StartRace, type RaceStatus } from "./StartRace";
 import { TurnManager } from "./TurnManager";
@@ -48,6 +49,8 @@ export class Match {
   private readonly disconnects: DisconnectPolicy;
   private turns: TurnManager | null = null;
   private readonly answerMs = new Map<string, number>();
+  private readonly askedCount = new Map<string, number>();
+  private readonly correctCount = new Map<string, number>();
 
   // Estado da pergunta da largada
   private raceQuestionId = "";
@@ -66,10 +69,23 @@ export class Match {
     this.limitMs = deps.config.secondsPerAnswer * 1000;
     this.race = new StartRace(this.playerIds, deps.config.startRaceMaxAttempts, deps.random);
     this.disconnects = new DisconnectPolicy(deps.clock, deps.config.reconnectToleranceSeconds);
-    for (const id of this.playerIds) this.answerMs.set(id, 0);
+    for (const id of this.playerIds) {
+      this.answerMs.set(id, 0);
+      this.askedCount.set(id, 0);
+      this.correctCount.set(id, 0);
+    }
   }
 
   // ---------- consulta ----------
+
+  /** Perguntas da vez respondidas (a da largada não conta) e acertos de cada jogador. */
+  playerStats(): PlayerStats[] {
+    return this.playerIds.map((playerId) => ({
+      playerId,
+      asked: this.askedCount.get(playerId) ?? 0,
+      correct: this.correctCount.get(playerId) ?? 0,
+    }));
+  }
 
   get phase(): MatchPhase {
     return this.currentPhase;
@@ -164,6 +180,8 @@ export class Match {
     this.answerMs.set(playerId, (this.answerMs.get(playerId) ?? 0) + (timedOut ? this.limitMs : elapsed));
 
     const correct = !timedOut && chosen === this.correctKey;
+    this.askedCount.set(playerId, (this.askedCount.get(playerId) ?? 0) + 1);
+    if (correct) this.correctCount.set(playerId, (this.correctCount.get(playerId) ?? 0) + 1);
     const base = { playerId, correct, timedOut, correctKey: this.correctKey };
 
     if (correct) {

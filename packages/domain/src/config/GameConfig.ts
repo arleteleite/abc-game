@@ -96,7 +96,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
     advance: { facil: 1, media: 2, dificil: 3 },
     levelRatio: { facil: 0.4, media: 0.3, dificil: 0.3 },
     levelBlockSize: 10,
-    secondsPerAnswer: 12,
+    secondsPerAnswer: 15,
     matchTimeLimitSeconds: 600,
     invitationSeconds: 180,
     reconnectToleranceSeconds: 30,

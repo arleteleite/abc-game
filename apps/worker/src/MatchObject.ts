@@ -404,7 +404,13 @@ export class MatchObject extends DurableObject<Env> {
   private sendEnd(playerId: string): void {
     const result = (this.match as Match).result as MatchResult;
     const winner = this.players.find((p) => p.playerId === result.winnerId);
-    this.sendTo(playerId, { type: "match_ended", result, winnerNickname: winner?.nickname ?? null });
+    const match = this.match as Match;
+    const positions = match.snapshot().players;
+    const finalStats = match.playerStats().map((s) => ({
+      ...s,
+      position: positions.find((p) => p.playerId === s.playerId)?.position ?? 0,
+    }));
+    this.sendTo(playerId, { type: "match_ended", result, winnerNickname: winner?.nickname ?? null, finalStats });
   }
 
   private broadcastOpponentStatus(joiningPlayerId: string, connected: boolean): void {
