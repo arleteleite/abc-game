@@ -46,8 +46,12 @@ export interface TrailConfig {
 
 export interface RankingConfig {
   topSize: number;
-  /** [P] */
+  /** Intervalo de atualização do ranking dentro do app. [P] */
   pollingSeconds: number;
+  /** Intervalo de atualização do telão (uma máquina só, pode ser mais curto). [P] */
+  telaoPollSeconds: number;
+  /** Quanto tempo o servidor reaproveita o ranking calculado, para poupar leituras do D1. [P] */
+  cacheSeconds: number;
 }
 
 export interface LobbyConfig {
@@ -105,7 +109,7 @@ export const DEFAULT_GAME_CONFIG: GameConfig = {
       { square: 10, kind: "advance", value: 2, label: "FBN" },
     ],
   },
-  ranking: { topSize: 5, pollingSeconds: 15 },
+  ranking: { topSize: 5, pollingSeconds: 15, telaoPollSeconds: 10, cacheSeconds: 10 },
   questionBank: { minValidatedPerLevel: 30, reducedMinValidatedPerLevel: 20 },
   nickname: { minLength: 2, maxLength: 16, blockedTerms: [] },
   lobby: { presenceTimeoutSeconds: 120, visibleSeconds: 15, pollSeconds: 5, matchMaxSeconds: 900 },

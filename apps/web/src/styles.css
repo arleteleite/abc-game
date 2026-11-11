@@ -492,3 +492,85 @@ h2 {
   float: left;
   margin-right: 6px;
 }
+
+/* ---------- rodapé discreto ---------- */
+.footer {
+  text-align: center;
+  font-size: 0.75rem;
+  color: #6f8576;
+  padding: 8px 16px 20px;
+}
+
+/* ---------- ranking ---------- */
+.ranking-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 0.95rem;
+}
+.ranking-table th {
+  text-align: left;
+  font-size: 0.8rem;
+  color: #46604f;
+  border-bottom: 2px solid #d3e2d6;
+  padding: 4px 6px;
+}
+.ranking-table td {
+  padding: 8px 6px;
+  border-bottom: 1px solid #e8f0ea;
+}
+.ranking-table .nick {
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.ranking-table .winner {
+  color: var(--green-dark);
+}
+
+/* ---------- telão ---------- */
+.telao {
+  min-height: calc(100vh - 56px);
+  padding: 24px clamp(16px, 3vw, 48px);
+  background: var(--green-dark);
+  color: var(--white);
+}
+.telao-header {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: space-between;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 20px;
+}
+.telao-header h1 {
+  color: var(--white);
+  font-size: clamp(1.6rem, 4vw, 3rem);
+}
+.telao-status {
+  margin: 0;
+  color: #cfe5d2;
+  font-size: clamp(0.9rem, 1.6vw, 1.3rem);
+}
+.telao-columns {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(min(100%, 420px), 1fr));
+  gap: clamp(12px, 2vw, 32px);
+}
+.telao-card {
+  background: var(--white);
+  color: var(--ink);
+  border-radius: var(--radius);
+  padding: clamp(14px, 2vw, 28px);
+}
+.telao-card h2 {
+  font-size: clamp(1.3rem, 2.6vw, 2.2rem);
+  margin-bottom: 8px;
+}
+.telao-card .ranking-table {
+  font-size: clamp(1rem, 2.2vw, 1.9rem);
+}
+.telao-card .ranking-table th {
+  font-size: clamp(0.8rem, 1.4vw, 1.2rem);
+}
+.telao-card .ranking-table td {
+  padding: clamp(8px, 1.4vw, 18px) 6px;
+}

@@ -79,10 +79,19 @@ await shot(a, "04-largada");
 
 // 4) Jogar clicando: A sempre acerta, B sempre erra
 async function answerIfQuestion(page, correct) {
+  try {
+    return await answerOnce(page, correct);
+  } catch (e) {
+    if (/Timeout/.test(String(e))) return false; // a pergunta mudou enquanto líamos: tenta de novo no próximo ciclo
+    throw e;
+  }
+}
+
+async function answerOnce(page, correct) {
   const statementLoc = page.locator(".question-statement");
   if ((await statementLoc.count()) === 0) return false;
   if ((await page.locator(".option.selected").count()) > 0) return false;
-  const statement = (await statementLoc.first().innerText()).trim();
+  const statement = (await statementLoc.first().innerText({ timeout: 2000 })).trim();
   const q = byStatement.get(statement);
   if (!q) throw new Error(`pergunta fora do banco: ${statement.slice(0, 40)}`);
   const rightText = q.options[q.correct];

@@ -7,12 +7,13 @@ interface Props {
   session: Session;
   onTrail: () => void;
   onQuiz: () => void;
+  onRanking: () => void;
   onLeave: () => void;
   onSessionLost: () => void;
 }
 
 // Menu dos jogos, depois de entrar com o apelido.
-export function MenuScreen({ api, session, onTrail, onQuiz, onLeave, onSessionLost }: Props) {
+export function MenuScreen({ api, session, onTrail, onQuiz, onRanking, onLeave, onSessionLost }: Props) {
   useHeartbeat(api, onSessionLost);
 
   return (
@@ -42,6 +43,9 @@ export function MenuScreen({ api, session, onTrail, onQuiz, onLeave, onSessionLo
       <button className="game-button" onClick={onTrail}>
         <strong>Trilha ABC+</strong>
         <span>Disputa em dupla: desafie outro jogador e corra até a casa 15.</span>
+      </button>
+      <button className="button" onClick={onRanking}>
+        Ver ranking
       </button>
     </main>
   );

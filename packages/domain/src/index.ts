@@ -87,6 +87,8 @@ export type {
   QuizSummary,
 } from "./quiz/QuizTypes";
 export { QuizRanking, type QuizStanding } from "./quiz/QuizRanking";
+export { TrailRanking, type TrailStanding } from "./ranking/TrailRanking";
 export type { QuizRecord } from "./results/QuizRecord";
 export type { QuizResultRepository } from "./results/QuizResultRepository";
 export { InMemoryQuizResultRepository } from "./results/InMemoryQuizResultRepository";
+export { TtlCache } from "./common/TtlCache";

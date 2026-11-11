@@ -5,6 +5,7 @@ import { LobbyScreen } from "./screens/LobbyScreen";
 import { MatchScreen } from "./screens/MatchScreen";
 import { MenuScreen } from "./screens/MenuScreen";
 import { QuizScreen } from "./screens/QuizScreen";
+import { RankingScreen } from "./screens/RankingScreen";
 import { SessionStore, type Session } from "./session/SessionStore";
 
 type Screen =
@@ -12,6 +13,7 @@ type Screen =
   | { name: "home" }
   | { name: "menu" }
   | { name: "quiz" }
+  | { name: "ranking" }
   | { name: "lobby" }
   | { name: "match"; matchId: string };
 
@@ -66,10 +68,13 @@ export function App() {
           session={session}
           onTrail={() => setScreen({ name: "lobby" })}
           onQuiz={() => setScreen({ name: "quiz" })}
+          onRanking={() => setScreen({ name: "ranking" })}
           onLeave={dropSession}
           onSessionLost={dropSession}
         />
       );
+    case "ranking":
+      return <RankingScreen onBack={goMenu} />;
     case "quiz":
       return <QuizScreen api={api} onExit={goMenu} onSessionLost={dropSession} />;
     case "match":
