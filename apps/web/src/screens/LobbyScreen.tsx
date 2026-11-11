@@ -6,6 +6,7 @@ import { PawnImage } from "../components/PawnImage";
 import { PawnPicker } from "../components/PawnPicker";
 import { pawnLabel } from "../constants";
 import { useLobby } from "../hooks/useLobby";
+import { buildInviteUrl, inviteMessage, whatsappUrl } from "../invite/inviteLink";
 import { errorText } from "../messages";
 import type { Session } from "../session/SessionStore";
 
@@ -61,6 +62,12 @@ export function LobbyScreen({ api, session, onMatch, onMenu, onLeave, onSessionL
     void run(() => api.invite(toPlayerId, pawn));
   };
 
+  const createLink = () => {
+    if (!pawn) return;
+    setNotice(null);
+    void run(() => api.inviteLink(pawn));
+  };
+
   const accept = (invitation: InvitationView, chosen: Pawn) => {
     void run(async () => {
       const { matchId } = await api.accept(invitation.id, chosen);
@@ -68,7 +75,9 @@ export function LobbyScreen({ api, session, onMatch, onMenu, onLeave, onSessionL
     });
   };
 
-  const waitingFor = view?.outgoing?.state === "created" ? view.outgoing : null;
+  const outgoingOpen = view?.outgoing?.state === "created" ? view.outgoing : null;
+  const waitingFor = outgoingOpen && outgoingOpen.toPlayerId !== null ? outgoingOpen : null; // convite pela lista
+  const linkInvite = outgoingOpen && outgoingOpen.toPlayerId === null ? outgoingOpen : null; // convite por link
   const waitingNickname = waitingFor ? (view?.available.find((p) => p.id === waitingFor.toPlayerId)?.nickname ?? "o jogador") : null;
 
   return (
@@ -115,6 +124,15 @@ export function LobbyScreen({ api, session, onMatch, onMenu, onLeave, onSessionL
         </section>
       )}
 
+      {linkInvite && (
+        <LinkInviteCard
+          invitation={linkInvite}
+          nickname={session.player.nickname}
+          busy={busy}
+          onCancel={() => void run(() => api.cancel(linkInvite.id))}
+        />
+      )}
+
       {waitingFor && (
         <section className="card">
           <h2>Convite enviado</h2>
@@ -126,6 +144,15 @@ export function LobbyScreen({ api, session, onMatch, onMenu, onLeave, onSessionL
           </button>
         </section>
       )}
+
+      <section className="card">
+        <h2>Convidar por WhatsApp</h2>
+        <p className="hint">Gera um link para você mandar a qualquer contato. Quem abrir e aceitar primeiro joga com você.</p>
+        <button className="button" disabled={!pawn || busy || waitingFor !== null || linkInvite !== null} onClick={createLink}>
+          Gerar link de convite
+        </button>
+        {!pawn && <p className="hint">Escolha seu peão primeiro.</p>}
+      </section>
 
       <section className="card">
         <h2>2. Quem está disponível</h2>
@@ -178,5 +205,50 @@ function IncomingInvitation({
         </button>
       </div>
     </div>
+  );
+}
+
+function LinkInviteCard({
+  invitation,
+  nickname,
+  busy,
+  onCancel,
+}: {
+  invitation: InvitationView;
+  nickname: string;
+  busy: boolean;
+  onCancel: () => void;
+}) {
+  const [copied, setCopied] = useState(false);
+  const url = buildInviteUrl(window.location.origin, invitation.id);
+  const message = inviteMessage(nickname, url);
+
+  async function copy() {
+    try {
+      await navigator.clipboard.writeText(url);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      // Sem permissão para copiar: o link já está visível para copiar à mão.
+    }
+  }
+
+  return (
+    <section className="card highlight">
+      <h2>Link de convite pronto</h2>
+      <p>Envie para quem você quer desafiar. Vale por 3 minutos e só uma pessoa pode usar. Esta tela avisa quando alguém aceitar.</p>
+      <a className="button primary link-button" href={whatsappUrl(message)} target="_blank" rel="noopener noreferrer">
+        Enviar pelo WhatsApp
+      </a>
+      <input className="input link-box" readOnly value={url} aria-label="Link do convite" onFocus={(e) => e.currentTarget.select()} />
+      <div className="row">
+        <button className="button" onClick={() => void copy()}>
+          {copied ? "Link copiado!" : "Copiar link"}
+        </button>
+        <button className="button" disabled={busy} onClick={onCancel}>
+          Cancelar convite
+        </button>
+      </div>
+    </section>
   );
 }

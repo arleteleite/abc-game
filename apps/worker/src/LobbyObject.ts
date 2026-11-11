@@ -73,6 +73,14 @@ export class LobbyObject extends DurableObject<Env> {
     // Sinal de vida (menu e Quiz): authenticate já renovou a sessão.
     if (method === "POST" && path === "/heartbeat") return json({ ok: true });
     if (method === "POST" && path === "/invitations") return this.invite(request, player);
+    if (method === "POST" && path === "/invitations/link") return this.inviteByLink(request, player);
+
+    // Quem abriu um link de convite vê quem convidou. O identificador do convite é o segredo do link.
+    const info = /^\/invitations\/([\w-]{1,64})$/.exec(path);
+    if (method === "GET" && info) {
+      const view = this.lobby.invitationInfo(info[1] as string);
+      return view ? json(view) : errorResponse("unknown_invitation", 404);
+    }
 
     const action = /^\/invitations\/([\w-]{1,64})\/(accept|decline|cancel)$/.exec(path);
     if (method === "POST" && action) {
@@ -104,6 +112,14 @@ export class LobbyObject extends DurableObject<Env> {
     this.lobby.leave(player.id);
     await this.persist();
     return json({ ok: true });
+  }
+
+  private async inviteByLink(request: Request, player: Player): Promise<Response> {
+    const body = await readJson(request);
+    if (!body || !isPawn(body["pawn"])) return errorResponse("invalid_request", 400);
+    const result = this.lobby.inviteByLink(player.id, body["pawn"]);
+    if (!result.ok) return errorResponse(result.reason, 409);
+    return json(result.value);
   }
 
   private async invite(request: Request, player: Player): Promise<Response> {

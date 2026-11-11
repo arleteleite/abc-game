@@ -574,3 +574,16 @@ h2 {
 .telao-card .ranking-table td {
   padding: clamp(8px, 1.4vw, 18px) 6px;
 }
+
+/* ---------- convite por link ---------- */
+.link-button {
+  display: block;
+  text-align: center;
+  text-decoration: none;
+  line-height: 48px;
+  padding-top: 0;
+  padding-bottom: 0;
+}
+.link-box {
+  font-size: 0.85rem;
+}

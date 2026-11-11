@@ -183,3 +183,98 @@ describe("Lobby: guardar e restaurar", () => {
     expect(b.lobby.join("ana")).toMatchObject({ ok: false, reason: "nickname_in_use" });
   });
 });
+
+describe("Lobby: convite por link (WhatsApp)", () => {
+  it("quem abre o link e aceita primeiro joga com quem convidou, mesmo sem estar no saguão", () => {
+    const { lobby, join } = setup();
+    const ana = join("Ana");
+    const link = lobby.inviteByLink(ana.player.id, "vaca");
+    if (!link.ok) throw new Error("falha");
+    expect(link.value.toPlayerId).toBeNull();
+
+    const beto = lobby.join("Beto"); // entrou agora e nem chegou ao saguão
+    if (!beto.ok) throw new Error("falha");
+    expect(lobby.invitationInfo(link.value.id)).toMatchObject({ fromNickname: "Ana", fromPawn: "vaca", state: "created" });
+
+    const accepted = lobby.accept(link.value.id, beto.value.player.id, "ovelha");
+    expect(accepted.ok).toBe(true);
+    expect(lobby.view(ana.player.id).matchId).toBeTruthy();
+  });
+
+  it("uso único: o segundo a abrir o link não entra", () => {
+    const { lobby, join } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    const cris = join("Cris");
+    const link = lobby.inviteByLink(ana.player.id, "vaca");
+    if (!link.ok) throw new Error("falha");
+    expect(lobby.accept(link.value.id, beto.player.id, "ovelha").ok).toBe(true);
+    expect(lobby.accept(link.value.id, cris.player.id, "milho")).toMatchObject({ ok: false, reason: "not_available" });
+    expect(lobby.invitationInfo(link.value.id)?.state).toBe("accepted");
+  });
+
+  it("o link vale por 3 minutos", () => {
+    const { lobby, join, clock } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    const link = lobby.inviteByLink(ana.player.id, "vaca");
+    if (!link.ok) throw new Error("falha");
+    clock.advance(181_000);
+    expect(lobby.invitationInfo(link.value.id)?.state).toBe("expired");
+    expect(lobby.accept(link.value.id, beto.player.id, "ovelha")).toMatchObject({ ok: false, reason: "expired" });
+  });
+
+  it("quem criou o link não pode aceitar o próprio convite, nem usar o mesmo peão", () => {
+    const { lobby, join } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    const link = lobby.inviteByLink(ana.player.id, "vaca");
+    if (!link.ok) throw new Error("falha");
+    expect(lobby.accept(link.value.id, ana.player.id, "ovelha")).toMatchObject({ ok: false, reason: "own_invitation" });
+    expect(lobby.accept(link.value.id, beto.player.id, "vaca")).toMatchObject({ ok: false, reason: "same_pawn" });
+  });
+
+  it("se quem convidou já entrou em outra partida, o link avisa e não cria partida", () => {
+    const { lobby, join } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    const cris = join("Cris");
+    const link = lobby.inviteByLink(ana.player.id, "vaca");
+    const direct = lobby.invite(ana.player.id, beto.player.id, "milho"); // convite novo cancela o link anterior
+    if (!link.ok || !direct.ok) throw new Error("falha");
+    expect(lobby.accept(link.value.id, cris.player.id, "ovelha")).toMatchObject({ ok: false, reason: "not_available" });
+    lobby.accept(direct.value.id, beto.player.id, "ovelha"); // Ana entra em partida com Beto
+    const second = lobby.inviteByLink(ana.player.id, "vaca");
+    expect(second).toEqual({ ok: false, reason: "player_busy" });
+  });
+
+  it("o link não aparece como convite recebido de ninguém nem na lista de disponíveis", () => {
+    const { lobby, join } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    lobby.inviteByLink(ana.player.id, "vaca");
+    expect(lobby.view(beto.player.id).incoming).toEqual([]);
+    expect(lobby.view(ana.player.id).outgoing).toMatchObject({ state: "created", toPlayerId: null });
+  });
+
+  it("convite que não existe devolve null", () => {
+    const { lobby } = setup();
+    expect(lobby.invitationInfo("nao-existe")).toBeNull();
+  });
+
+  it("o convite usado continua consultável por um tempo e depois é esquecido", () => {
+    const { lobby, join, clock } = setup();
+    const ana = join("Ana");
+    const beto = join("Beto");
+    const link = lobby.inviteByLink(ana.player.id, "vaca");
+    if (!link.ok) throw new Error("falha");
+    lobby.accept(link.value.id, beto.player.id, "ovelha");
+    lobby.sweep();
+    expect(lobby.invitationInfo(link.value.id)?.state).toBe("accepted"); // quem abrir agora vê "já foi usado"
+    clock.advance(180_000 + 10 * 60_000 + 1000);
+    lobby.heartbeat(ana.player.id);
+    lobby.heartbeat(beto.player.id);
+    lobby.sweep();
+    expect(lobby.invitationInfo(link.value.id)).toBeNull();
+  });
+});

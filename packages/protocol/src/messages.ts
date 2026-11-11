@@ -98,3 +98,14 @@ export type ServerMessage =
   | { type: "match_ended"; result: MatchResult; winnerNickname: string | null }
   | { type: "error"; reason: string }
   | { type: "pong"; t: number };
+
+// ---------------------------------------------------------------------------
+// Convite por link (WhatsApp)
+//   POST /api/invitations/link    { pawn }  -> InvitationView (o id é o segredo do link)
+//   GET  /api/invitations/<id>              -> InvitationView (quem abriu o link vê quem convidou)
+//   POST /api/invitations/<id>/accept       -> o mesmo aceite do convite pela lista
+// ---------------------------------------------------------------------------
+
+export interface InviteLinkRequest {
+  pawn: Pawn;
+}

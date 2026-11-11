@@ -44,6 +44,9 @@ export interface MatchSetup {
   ];
 }
 
+/** Quanto tempo depois do prazo um convite continua consultável (para explicar "já foi usado"). */
+const INVITATION_RETENTION_MS = 10 * 60 * 1000;
+
 /** Estado que o servidor guarda entre uma requisição e outra (pode ser descarregado da memória). */
 export interface LobbySnapshot {
   players: JoinedPlayer[];
@@ -132,9 +135,11 @@ export class Lobby {
         removed.push(player.id);
       }
     }
-    // Limpa convites já encerrados e entregues.
+    // Limpa convites antigos. Um convite encerrado (aceito, recusado, cancelado ou vencido) fica
+    // guardado um tempo além do prazo, para quem abrir o link depois ver "já foi usado" em vez
+    // de "não existe".
     for (const [id, invitation] of this.invitations) {
-      if (invitation.state === "accepted" || (invitation.state !== "created" && this.deliveredTerminal.has(id))) {
+      if (this.clock.now() - invitation.expiresAt >= INVITATION_RETENTION_MS) {
         this.invitations.delete(id);
         this.deliveredTerminal.delete(id);
       }
@@ -200,6 +205,26 @@ export class Lobby {
     return ok(this.toView(invitation) as InvitationView);
   }
 
+  /**
+   * Convite por link (WhatsApp): sem destinatário. Quem abrir o link e aceitar primeiro
+   * joga com quem convidou. O identificador do convite é o "segredo" do link.
+   */
+  inviteByLink(fromId: string, pawn: Pawn): Result<InvitationView, InviteProblem> {
+    if (!this.registry.get(fromId)) return fail("unknown_player");
+    if (this.inMatch.has(fromId)) return fail("player_busy");
+
+    this.cancelOpenInvitationsFrom(fromId);
+    const invitation = new Invitation(this.ids.next(), fromId, pawn, null, this.clock, this.invitationSeconds);
+    this.invitations.set(invitation.id, invitation);
+    return ok(this.toView(invitation) as InvitationView);
+  }
+
+  /** Dados de um convite (para quem abriu o link ver quem convidou), ou null se não existe mais. */
+  invitationInfo(invitationId: string): InvitationView | null {
+    const invitation = this.invitations.get(invitationId);
+    return invitation ? this.toView(invitation) : null;
+  }
+
   accept(invitationId: string, playerId: string, pawn: Pawn): Result<MatchSetup, RespondProblem> {
     const invitation = this.invitations.get(invitationId);
     if (!invitation) return fail("unknown_invitation");
@@ -207,6 +232,10 @@ export class Lobby {
     if (!guest) return fail("unknown_player");
     const host = this.registry.get(invitation.fromPlayerId);
     if (!host) return fail("sender_gone");
+    // Convite já usado, recusado, cancelado ou vencido: diz isso (e não "quem convidou saiu").
+    const state = invitation.state;
+    if (state === "expired") return fail("expired");
+    if (state !== "created") return fail("not_available");
     if (this.inMatch.has(playerId)) return fail("player_busy");
     if (this.inMatch.has(host.id)) return fail("sender_gone");
 

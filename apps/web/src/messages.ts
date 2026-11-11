@@ -12,6 +12,8 @@ const TEXTS: Readonly<Record<string, string>> = {
   expired: "O convite expirou.",
   not_available: "Esse convite não está mais disponível.",
   same_pawn: "Esse peão já é do adversário. Escolha outro.",
+  own_invitation: "Esse convite é seu. Envie o link para outra pessoa.",
+  unknown_invitation: "Esse convite não existe mais ou o link está errado.",
   sender_gone: "Quem convidou saiu.",
   match_unavailable: "Não foi possível criar a partida agora. Tente de novo.",
 };

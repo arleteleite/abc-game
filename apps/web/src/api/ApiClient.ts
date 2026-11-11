@@ -1,4 +1,4 @@
-import type { Pawn } from "@abc-game/domain";
+import type { InvitationView, Pawn } from "@abc-game/domain";
 import type {
   JoinResponse,
   LobbyResponse,
@@ -45,6 +45,14 @@ export class ApiClient {
 
   cancel(invitationId: string): Promise<unknown> {
     return this.request("POST", `/api/invitations/${invitationId}/cancel`);
+  }
+
+  inviteLink(pawn: Pawn): Promise<InvitationView> {
+    return this.request("POST", "/api/invitations/link", { pawn });
+  }
+
+  invitationInfo(invitationId: string): Promise<InvitationView> {
+    return this.request("GET", `/api/invitations/${invitationId}`);
   }
 
   heartbeat(): Promise<unknown> {

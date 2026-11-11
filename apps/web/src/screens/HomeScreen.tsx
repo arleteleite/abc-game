@@ -6,10 +6,12 @@ import type { Session } from "../session/SessionStore";
 interface Props {
   api: ApiClient;
   onJoined: (session: Session) => void;
+  /** Quem chegou por um link de convite: avisa no topo. */
+  invited?: boolean;
 }
 
 // Primeira tela: o jogador escolhe um apelido e entra. Sem telefone, sem login.
-export function HomeScreen({ api, onJoined }: Props) {
+export function HomeScreen({ api, onJoined, invited = false }: Props) {
   const [nickname, setNickname] = useState("");
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -32,6 +34,12 @@ export function HomeScreen({ api, onJoined }: Props) {
     <main className="screen home">
       <h1 className="title">ABC+ GAME</h1>
       <p className="subtitle">Jogos do Plano ABC+ Tocantins</p>
+
+      {invited && (
+        <p className="notice" role="status">
+          Você foi desafiado(a) para a Trilha ABC+! Digite seu apelido para ver o convite.
+        </p>
+      )}
 
       <form onSubmit={submit} className="card">
         <label htmlFor="nickname" className="label">
