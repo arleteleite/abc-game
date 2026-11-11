@@ -88,7 +88,7 @@ export class LobbyObject extends DurableObject<Env> {
 
   private view(player: Player): Response {
     const view = this.lobby.view(player.id);
-    return json({ ...view, pollSeconds: config.ranking.pollingSeconds } satisfies LobbyResponse);
+    return json({ ...view, pollSeconds: config.lobby.pollSeconds } satisfies LobbyResponse);
   }
 
   private async leave(player: Player): Promise<Response> {

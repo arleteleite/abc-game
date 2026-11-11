@@ -13,10 +13,13 @@
   },
   "scripts": {
     "test": "npm run test --workspaces --if-present",
-    "typecheck": "npm run typecheck --workspaces --if-present"
+    "typecheck": "npm run typecheck --workspaces --if-present",
+    "imagens": "node scripts/converter-imagens.mjs"
   },
   "devDependencies": {
+    "playwright-core": "^1.65.0",
     "read-excel-file": "^9.3.14",
+    "sharp": "^0.35.5",
     "typescript": "^5.6.0"
   }
 }

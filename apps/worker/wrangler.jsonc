@@ -13,6 +13,13 @@
     // O plano Free só aceita Durable Objects com armazenamento SQLite.
     { "tag": "v1", "new_sqlite_classes": ["LobbyObject", "MatchObject"] }
   ],
+  // Serve o site (apps/web/dist) pelo mesmo endereço da API: sem CORS e sem cobrar requisição
+  // por arquivo estático. Só /api/* passa pelo código do Worker.
+  "assets": {
+    "directory": "../web/dist",
+    "not_found_handling": "single-page-application",
+    "run_worker_first": ["/api/*"]
+  },
   "d1_databases": [
     {
       "binding": "DB",
